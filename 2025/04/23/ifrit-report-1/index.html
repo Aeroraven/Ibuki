@@ -1,0 +1,827 @@
+
+
+<!DOCTYPE html>
+<html lang="en" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+
+  <link rel="apple-touch-icon" sizes="76x76" href="/Ibuki/img/fluid.png">
+  <link rel="icon" href="/Ibuki/img/fluid.png">
+  
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="author" content="funkybirds(Aeroraven)">
+  <meta name="keywords" content="">
+  
+    <meta name="description" content="Ifrit-v2 过程记录 1: CUDA软件渲染的实现流程发现自己的脑袋属于一个LRU（Last Recently Used）缓存，最近做的事情就会记得很清楚，之前做的事情就会忘得一干二净。为了防止自己忘记，决定把Ifrit-v2的实现过程记录下来。 关于Ifrit-v2的所有参考资料和引用，参考对应仓库的ACKNOWLEDGEMENT.md文件 1. 前置内容1.1 渲染管线渲染管线分为四个阶">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Ifrit-v2 过程记录 1: CUDA软件渲染的实现流程">
+<meta property="og:url" content="http://example.com/2025/04/23/ifrit-report-1/index.html">
+<meta property="og:site_name" content="Funkybirds">
+<meta property="og:description" content="Ifrit-v2 过程记录 1: CUDA软件渲染的实现流程发现自己的脑袋属于一个LRU（Last Recently Used）缓存，最近做的事情就会记得很清楚，之前做的事情就会忘得一干二净。为了防止自己忘记，决定把Ifrit-v2的实现过程记录下来。 关于Ifrit-v2的所有参考资料和引用，参考对应仓库的ACKNOWLEDGEMENT.md文件 1. 前置内容1.1 渲染管线渲染管线分为四个阶">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2025-04-23T08:35:02.994Z">
+<meta property="article:modified_time" content="2025-04-23T15:59:36.047Z">
+<meta property="article:author" content="funkybirds(Aeroraven)">
+<meta property="article:tag" content="T:并行计算">
+<meta property="article:tag" content="T:图形学">
+<meta property="article:tag" content="L:CUDA">
+<meta property="article:tag" content="L:C++">
+<meta property="article:tag" content="P:Ifrit-v2">
+<meta property="article:tag" content="T:几何">
+<meta name="twitter:card" content="summary_large_image">
+  
+  
+  
+  <title>Ifrit-v2 过程记录 1: CUDA软件渲染的实现流程 - Funkybirds</title>
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
+
+
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/github-markdown-css/4.0.0/github-markdown.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/hint.css/2.7.0/hint.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+<!-- Do not modify the link that theme dependent icons -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1749284_5i9bdhy70f8.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1736178_k526ubmyhba.css">
+
+
+<link  rel="stylesheet" href="/Ibuki/css/main.css" />
+
+
+  <link id="highlight-css" rel="stylesheet" href="/Ibuki/css/highlight.css" />
+  
+    <link id="highlight-css-dark" rel="stylesheet" href="/Ibuki/css/highlight-dark.css" />
+  
+
+
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    Fluid.ctx = Object.assign({}, Fluid.ctx)
+    var CONFIG = {"hostname":"example.com","root":"/Ibuki/","version":"1.9.8","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false,"scope":[]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":{"measurement_id":null},"tencent":{"sid":null,"cid":null},"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false},"umami":{"src":null,"website_id":null,"domains":null,"start_time":"2024-01-01T00:00:00.000Z","token":null,"api_server":null}},"search_path":"/Ibuki/local-search.xml","include_content_in_search":true};
+
+    if (CONFIG.web_analytics.follow_dnt) {
+      var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
+      Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
+    }
+  </script>
+  <script  src="/Ibuki/js/utils.js" ></script>
+  <script  src="/Ibuki/js/color-schema.js" ></script>
+  
+
+
+  
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+
+<body>
+  
+
+  <header>
+    
+
+<div class="header-inner" style="height: 70vh;">
+  <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/Ibuki/">
+      <strong>Funkybirds-MK2</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/Ibuki/" target="_self">
+                <i class="iconfont icon-home-fill"></i>
+                <span>Home</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/Ibuki/archives/" target="_self">
+                <i class="iconfont icon-archive-fill"></i>
+                <span>Archives</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/Ibuki/categories/" target="_self">
+                <i class="iconfont icon-category-fill"></i>
+                <span>Categories</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/Ibuki/tags/" target="_self">
+                <i class="iconfont icon-tags-fill"></i>
+                <span>Tags</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/Ibuki/about/" target="_self">
+                <i class="iconfont icon-user-fill"></i>
+                <span>About</span>
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <i class="iconfont icon-search"></i>
+            </a>
+          </li>
+          
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">
+              <i class="iconfont icon-dark" id="color-toggle-icon"></i>
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+  
+
+<div id="banner" class="banner" parallax=true
+     style="background: url('/Ibuki/img/default.png') no-repeat center center; background-size: cover;">
+  <div class="full-bg-img">
+    <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+      <div class="banner-text text-center fade-in-up">
+        <div class="h2">
+          
+            <span id="subtitle" data-typed-text="Ifrit-v2 过程记录 1: CUDA软件渲染的实现流程"></span>
+          
+        </div>
+
+        
+          
+  <div class="mt-3">
+    
+    
+      <span class="post-meta">
+        <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+        <time datetime="2025-04-23 16:35" pubdate>
+          April 23, 2025 pm
+        </time>
+      </span>
+    
+  </div>
+
+  <div class="mt-1">
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-chart"></i>
+        
+          4.1k words
+        
+      </span>
+    
+
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-clock-fill"></i>
+        
+        
+        
+          35 mins
+        
+      </span>
+    
+
+    
+    
+  </div>
+
+
+        
+      </div>
+
+      
+    </div>
+  </div>
+</div>
+
+</div>
+
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+
+    </div>
+
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div id="board">
+          <article class="post-content mx-auto">
+            <h1 id="seo-header">Ifrit-v2 过程记录 1: CUDA软件渲染的实现流程</h1>
+            
+            
+              <div class="markdown-body">
+                
+                <h1 id="Ifrit-v2-过程记录-1-CUDA软件渲染的实现流程"><a href="#Ifrit-v2-过程记录-1-CUDA软件渲染的实现流程" class="headerlink" title="Ifrit-v2 过程记录 1: CUDA软件渲染的实现流程"></a>Ifrit-v2 过程记录 1: CUDA软件渲染的实现流程</h1><p>发现自己的脑袋属于一个LRU（Last Recently Used）缓存，最近做的事情就会记得很清楚，之前做的事情就会忘得一干二净。为了防止自己忘记，决定把Ifrit-v2的实现过程记录下来。</p>
+<p>关于Ifrit-v2的所有参考资料和引用，参考对应仓库的ACKNOWLEDGEMENT.md文件</p>
+<h2 id="1-前置内容"><a href="#1-前置内容" class="headerlink" title="1. 前置内容"></a>1. 前置内容</h2><h3 id="1-1-渲染管线"><a href="#1-1-渲染管线" class="headerlink" title="1.1 渲染管线"></a>1.1 渲染管线</h3><p>渲染管线分为四个阶段，分别是应用阶段、几何阶段、光栅化阶段和像素处理阶段。</p>
+<ul>
+<li>应用阶段从显存中读取顶点数据，将其装配为几何图元</li>
+<li>几何阶段对图元进行顶点着色、投影变换、裁剪和屏幕映射。齐次除法后的坐标（NDC坐标）经过屏幕映射后，得到屏幕坐标</li>
+<li>光栅化包括三角形设置、三角形遍历</li>
+<li>像素处理阶段对每个像素进行颜色计算，得到最终的颜色值</li>
+</ul>
+<h4 id="1-1-1-透视正确的重心插值"><a href="#1-1-1-透视正确的重心插值" class="headerlink" title="1.1.1 透视正确的重心插值"></a>1.1.1 透视正确的重心插值</h4><p>对于VS坐标系下的2D空间中的点 $V(x,z)$，其在成像平面上的坐标为$S(u,d)$，则有对应关系:</p>
+<p>$$<br>x &#x3D; \frac{uz}{d}<br>$$<br>对于起始点$V_1(x_1,z_1), S_1(u_1,d)$，终止点$V_2(x_2,z_2), S_2(u_2,d)$，和待插值点$V_t(x_t,z_t), S_t(u_t,d)$，则有：</p>
+<p>$$<br>x_t &#x3D; x_1 + t(x_2 - x_1)<br>$$</p>
+<p>$$<br>z_t &#x3D; z_1 + t(z_2 - z_1)<br>$$</p>
+<p>$$<br>u_t &#x3D; u_1 + s(u_2 - u_1)<br>$$</p>
+<p>即</p>
+<p>$$<br>z_1 + t(z_2 - z_1) &#x3D; \frac{d\left(x_1 + t(x_2 - x_1)\right)}{u_1 + s(u_2 - u_1)}<br>$$</p>
+<p>也就是</p>
+<p>$$<br>z_1 + t(z_2 - z_1) &#x3D; \frac{d\left(\frac{u_1z_1}{d} + t(\frac{u_2z_2}{d} - \frac{u_1z_1}{d})\right)}{u_1 + s(u_2 - u_1)}<br>$$</p>
+<p>$$<br>z_1 + t(z_2 - z_1) &#x3D; \frac{\left(u_1z_1 + t(u_2z_2 - u_1z_1)\right)}{u_1 + s(u_2 - u_1)}<br>$$</p>
+<p>即</p>
+<p>$$<br>s(u_2 - u_1) &#x3D; \frac{u_1z_1 + t(u_2z_2 - u_1z_1)-u_1z_1-u_1t(z_2-z_1)}{z_1 + t(z_2 - z_1)}<br>$$</p>
+<p>$$<br>s(u_2 - u_1) &#x3D; \frac{t(u_2z_2 - u_1z_1)-u_1t(z_2-z_1)}{z_1 + t(z_2 - z_1)}<br>$$</p>
+<p>$$<br>s(u_2 - u_1) &#x3D; \frac{t\left( u_2z_2-u_1z_1-u_1z_2+u_1z_1 \right)}{z_1 + t(z_2 - z_1)}<br>$$</p>
+<p>$$<br>s(u_2 - u_1) &#x3D; \frac{tz_2(u_2-u_1)}{z_1 + t(z_2 - z_1)}<br>$$</p>
+<p>$$<br>s &#x3D; \frac{tz_2}{z_1 + t(z_2 - z_1)}<br>$$</p>
+<p>所以</p>
+<p>$$<br>s(z_1 + t(z_2 - z_1)) &#x3D; tz_2<br>$$</p>
+<p>$$<br>sz_1 + st(z_2 - z_1) &#x3D; tz_2<br>$$</p>
+<p>$$<br>t(s(z_2 - z_1) - z_2) &#x3D; -sz_1<br>$$</p>
+<p>最后得到</p>
+<p>$$<br>t &#x3D; \frac{sz_1}{s(z_1 - z_2) + z_2}<br>$$</p>
+<p>代回原值</p>
+<p>$$<br>z_t &#x3D; z_1 + \frac{sz_1}{s(z_1 - z_2) + z_2}(z_2 - z_1)<br>$$</p>
+<p>$$<br>z_t &#x3D; \frac{sz_1(z_1-z_2)+z_1z_2+sz_1z_2-sz_1^2}{s(z_1 - z_2) + z_2}<br>$$</p>
+<p>$$<br>z_t &#x3D; \frac{z_1z_2}{s(z_1 - z_2) + z_2}<br>$$</p>
+<p>$$<br>z_t &#x3D; \frac{1}{s(\frac{1}{z_2}-\frac{1}{z_1}) + \frac{1}{z_1}}<br>$$</p>
+<p>对于任意值$A$</p>
+<p>$$<br>A_t &#x3D; A_1 + \frac{sz_1}{s(z_1 - z_2) + z_2}(A_2 - A_1)<br>$$</p>
+<p>$$<br>A_t &#x3D; \frac{A_1s(z_1-z_2)+A_1z_2+sz_1A_2-sz_1A_1}{s(z_1 - z_2) + z_2}<br>$$</p>
+<p>$$<br>A_t &#x3D; \frac{A_1z_2-sA_1z_2+sz_1A_2}{s(z_1 - z_2) + z_2}<br>$$</p>
+<p>$$<br>A_t &#x3D; \frac{A_1z_2(1-s)+A_2z_1s}{s(z_1 - z_2) + z_2}<br>$$</p>
+<p>$$<br>A_t &#x3D; \frac{\frac{A_1}{z_1}(1-s)+\frac{A_2}{z_2}s}{\frac{1}{z_1}(1-s)+\frac{1}{z_2}s}<br>$$</p>
+<p>考虑空间坐标A,B,C的投影和某一点的屏幕上的重心坐标$(u,v)$</p>
+<p>$$<br>CQ &#x3D; uCA + vCB<br>$$</p>
+<p>设$AD&#x3D;kAB$，D在AB上，则</p>
+<p>$$<br>z_d &#x3D; \frac{1}{\frac{1}{z_A}+k(\frac{1}{z_B}-\frac{1}{z_A})}<br>$$</p>
+<p>设$CQ &#x3D; pCD$，则</p>
+<p>$$<br>z_q &#x3D; \frac{1}{\frac{1}{z_C}+p(\frac{1}{z_A}+k(\frac{1}{z_B}-\frac{1}{z_A})-\frac{1}{z_C})}<br>$$</p>
+<p>$$<br>z_q &#x3D; \frac{1}{(1-p)\frac{1}{z_C}+p(1-k)\frac{1}{z_A}+pk\frac{1}{z_B}}<br>$$</p>
+<p>考虑到</p>
+<p>$$<br>p(CA+k(CB-CA))&#x3D;uCA+vCB<br>$$</p>
+<p>$$<br>pCA-pkCA +pkCB &#x3D; uCA+vCB<br>$$</p>
+<p>所以有 $pk&#x3D;v, p(1-k)&#x3D;u$，带入，得到</p>
+<p>$$<br>z_q &#x3D; \frac{1}{(1-u-v)\frac{1}{z_C}+u\frac{1}{z_A}+v\frac{1}{z_B}}<br>$$</p>
+<h3 id="1-2-CUDA"><a href="#1-2-CUDA" class="headerlink" title="1.2 CUDA"></a>1.2 CUDA</h3><h4 id="1-2-1-restrict-指针"><a href="#1-2-1-restrict-指针" class="headerlink" title="1.2.1 restrict 指针"></a>1.2.1 restrict 指针</h4><p>restrict指针是一个C99的关键字（虽然MSVC的C++和CUDA里也能用），表示该指针所指向的内存区域不会被其他指针访问。这样编译器就可以对该内存区域进行更好的优化。</p>
+<h2 id="2-CUDA-软光栅流程"><a href="#2-CUDA-软光栅流程" class="headerlink" title="2. CUDA 软光栅流程"></a>2. CUDA 软光栅流程</h2><h3 id="2-1-顶点着色器"><a href="#2-1-顶点着色器" class="headerlink" title="2.1 顶点着色器"></a>2.1 顶点着色器</h3><p>直接一个线程对应一个顶点，执行顶点着色器。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><code class="hljs cuda">IFRIT_KERNEL void vertexProcessingKernel(<br>    VertexShader* vertexShader,<br>    uint32_t vertexCount,<br>    char* IFRIT_RESTRICT_CUDA dVertexBuffer,<br>    TypeDescriptorEnum* IFRIT_RESTRICT_CUDA dVertexTypeDescriptor,<br>    float4* IFRIT_RESTRICT_CUDA dVaryingBuffer,<br>    float4* IFRIT_RESTRICT_CUDA dPosBuffer<br>) &#123;<br>    const auto globalInvoIdx = blockIdx.x * blockDim.x + threadIdx.x;<br>    if (globalInvoIdx &gt;= vertexCount) return;<br>    const auto numAttrs = csAttributeCounts;<br>    const auto numVaryings = csVaryingCounts;<br><br>    const void* vertexInputPtrs[CU_MAX_ATTRIBUTES];<br>    float4* varyingOutputPtrs[CU_MAX_VARYINGS];<br><br>    for (int i = 0; i &lt; numAttrs; i++) &#123;<br>        vertexInputPtrs[i] = globalInvoIdx * csTotalVertexOffsets + dVertexBuffer + csVertexOffsets[i];<br>    &#125;<br>    for (int i = 0; i &lt; numVaryings; i++) &#123;<br>        varyingOutputPtrs[i] = dVaryingBuffer + globalInvoIdx * numVaryings + i;<br>    &#125;<br>    vertexShader-&gt;execute(vertexInputPtrs, (Vector4f*)&amp;dPosBuffer[globalInvoIdx], (Vector4f**)varyingOutputPtrs);<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h3 id="2-2-裁剪、剔除和图元生成"><a href="#2-2-裁剪、剔除和图元生成" class="headerlink" title="2.2 裁剪、剔除和图元生成"></a>2.2 裁剪、剔除和图元生成</h3><p>一个线程处理一个三角形，首先先从Index Buffer中拿到三角形的三个顶点。</p>
+<p>之后考虑齐次裁剪，这里使用直接VS输出的坐标（等待标准化）。对于相邻两个顶点，如果w分量符号不同，则进入剔除流程，求两个点在w&#x3D;Near平面上的交点，将该点加入顶点列表，之后按序组装裁剪后的三角形。</p>
+<blockquote>
+<p> 这里我只使用了近平面裁剪，因为后续光栅化算法是Tile-based的，因此不存在Viewport之外的Tile。产生了更多的三角形反而增加不必要的Triangle-Tile的相交测试，徒增开销。另外，更多的裁剪会增加Local Memory（实际上是访存开销最大的Global Memory）的使用；如果放Shared Memory又会降低Occupancy。权衡考虑，我只使用近平面裁剪。</p>
+</blockquote>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><code class="hljs cuda">float4 vSrc[3] = &#123; v1,v2,v3 &#125;;<br>for (int j = 0; j &lt; 3; j++) &#123;<br>    auto curNid = (j + 1) % 3;<br>    auto pnPos = vSrc[curNid];<br>    auto npn = -pnPos.w;<br><br>    float3 pnBary = &#123; 0,0,0 &#125;;<br>    if (j == 0) pnBary.y = 1;<br>    if (j == 1) pnBary.z = 1;<br>    if (j == 2) pnBary.x = 1;<br><br>    if IF_CONSTEXPR (!CU_OPT_HOMOGENEOUS_DISCARD) &#123;<br>        if (npc * npn &lt; 0) &#123;<br>            float numo = pc.pos.w;<br>            float deno = -(pnPos.w - pc.pos.w);<br>            float t = (-1e-3f + numo) / deno;<br>            float4 intersection = Lerp(pc.pos, pnPos, t);<br>            float3 barycenter = Lerp(pc.barycenter, pnBary, t);<br><br>            TileRasterClipVertexCUDA newp;<br>            newp.barycenter = barycenter;<br>            newp.pos = intersection;<br>            retd[retdTriCnt + retOffset - 3] = newp;<br>            retdIndex[retCnt + retIdxOffset] = retdTriCnt;<br>            retCnt++;<br>            retdTriCnt++;<br>        &#125;<br>    &#125;<br><br>    if (npn &lt; 0) &#123;<br>        retdIndex[retCnt + retIdxOffset] = curNid;<br>        retCnt++;<br>    &#125;<br>    npc = npn;<br>    pc.pos = pnPos;<br>    pc.barycenter = pnBary;<br>&#125;<br><br></code></pre></td></tr></table></figure>
+
+
+<p>完成后，将所有三角形转换到NDC空间，计算三角形包围盒，剔除不在视窗范围内的三角形。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><code class="hljs cuda">IFRIT_DEVICE bool devViewSpaceClip(float4 v1, float4 v2, float4 v3) &#123;<br>    auto maxX = max(v1.x, max(v2.x, v3.x));<br>    auto maxY = max(v1.y, max(v2.y, v3.y));<br>    auto minX = min(v1.x, min(v2.x, v3.x));<br>    auto minY = min(v1.y, min(v2.y, v3.y));<br>    auto isIllegal = maxX &lt; 0.0f || maxY &lt; 0.0f || minX &gt; 1.0f || minY &gt; 1.0f;<br>    return isIllegal;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>在NDC空间中，计算三角形的有向面积，如果该面积小于0，进行背面剔除</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><code class="hljs cuda">IFRIT_DEVICE bool devTriangleCull(float4 v1, float4 v2, float4 v3) &#123;<br>    float d1 = (v1.x * (v2.y - v3.y));<br>    float d2 = (v2.x * (v3.y - v1.y));<br>    float d3 = (v3.x * (v1.y - v2.y));<br>    return (d1 + d2 + d3) &gt;= 0.0f;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>对于不覆盖任何采样点的小三角形，进行Contribution Culling，剔除小三角形。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><code class="hljs cuda">IF_CONSTEXPR auto enableSmallPrimitiveCull = CU_OPT_SMALL_PRIMITIVE_CULL &amp;&amp; !tpMsaaEnabled;<br>if IF_CONSTEXPR (enableSmallPrimitiveCull) &#123;<br>    float4 bbox;<br>    GeneralFunction::devGetBBox(dv1, dv2, dv3, bbox);<br>    bbox.x = bbox.x * csFrameWidth;<br>    bbox.z = bbox.z * csFrameWidth;<br>    bbox.y = bbox.y * csFrameHeight;<br>    bbox.w = bbox.w * csFrameHeight;<br>    if (round(bbox.x) == round(bbox.z) || round(bbox.w) == round(bbox.y)) &#123;<br>        continue;<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>然后将通过测试的三角形加入列表。</p>
+<h3 id="2-3-光栅化"><a href="#2-3-光栅化" class="headerlink" title="2.3 光栅化"></a>2.3 光栅化</h3><h4 id="2-3-1-测试参数预生成"><a href="#2-3-1-测试参数预生成" class="headerlink" title="2.3.1 测试参数预生成"></a>2.3.1 测试参数预生成</h4><p>后续我们需要测试每一个三角形的边对于某个点而言，在里侧或者外侧。对于$A(a,b),B(c,d)$，测试点的内外可以通过向量积来判断：<br>$$<br>F &#x3D; sign(((C-A) \times (B-A)) &#x3D; sign( (x-a)(d-b) - (y-b)(c-a) )<br>$$</p>
+<p>拆开上述方程，可以写为：</p>
+<p>$$<br>f(x,y) &#x3D; x(d-b) - y(c-a) +bc - ad<br>$$</p>
+<p>实际上我们取得的(x,y)是整数格点的坐标，而上式所需的(x,y)是UV&#x2F;NDC坐标，因此为了省略浮点除法运算，可以将A和B的坐标转换到当前坐标系下。最后得到9个坐标，为了后续Kernel的Memory Coalescing，我们将其Pack到2个float4和一个float中。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><code class="hljs cuda">const float sV2V1y = dv2.y - dv1.y;<br>const float sV2V1x = dv1.x - dv2.x;<br>const float sV3V2y = dv3.y - dv2.y;<br>const float sV3V2x = dv2.x - dv3.x;<br>const float sV1V3y = dv1.y - dv3.y;<br>const float sV1V3x = dv3.x - dv1.x;<br>dAtriEdgeCoefs1Aligned[globalInvo] = &#123;<br>    (float)(sV2V1y)*frameHeight,<br>    (float)(sV2V1x)*frameWidth ,<br>    (float)(-dv2.x * frameWidth * dv1.y * frameHeight + dv1.x * frameWidth * dv2.y * frameHeight), //+deps<br>    (float)(sV3V2y)*frameHeight<br>&#125;;<br>dAtriEdgeCoefs2Aligned[globalInvo] = &#123;<br>    (float)(sV3V2x)*frameWidth ,<br>    (float)(-dv3.x * frameWidth * dv2.y * frameHeight + dv2.x * frameWidth * dv3.y * frameHeight), //+deps<br>    (float)(sV1V3y)*frameHeight,<br>    (float)(sV1V3x)*frameWidth ,<br>&#125;;<br>dAtriEdgeCoefs3Aligned[globalInvo] = (float)(-dv1.x * frameWidth * dv3.y * frameHeight + dv3.x * frameWidth * dv1.y * frameHeight); //+deps<br></code></pre></td></tr></table></figure>
+
+<p>然后对于三角形内某点$P(x,y)$, 我们计算重心坐标$(u,v)$, 其中<br>$$<br>u &#x3D; PB \times CB, v&#x3D; PC \times BA<br>$$</p>
+<p>对于$u$，结果可以写为<br>$$<br>u &#x3D; (x-x_b)(y_c-y_b) - (y-y_b)(x_c-x_b) &#x3D; (y_c-y_b)x - (x_c-x_b)y + (x_cy_b-x_by_c)<br>$$</p>
+<p>对于$v$，结果可以写为<br>$$<br>v &#x3D; (x-x_c)(y_a-y_c) - (y-y_c)(x_a-x_c) &#x3D; (y_a-y_c)x - (x_a-x_c)y + (x_ay_c-x_cy_a)<br>$$</p>
+<p>同样地，避免除法，预计算$1&#x2F;w$，同时转换到整数格点的坐标空间中。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><code class="hljs cuda">float4 f3 = &#123; (float)(sV2V1y * ar) * invFrameWidth, (float)(sV2V1x * ar) * invFrameHeight,(float)((-dv1.x * sV2V1y - dv1.y * sV2V1x) * ar) &#125;;<br>float4 f1 = &#123; (float)(sV3V2y * ar) * invFrameWidth, (float)(sV3V2x * ar) * invFrameHeight,(float)((-dv2.x * sV3V2y - dv2.y * sV3V2x) * ar) &#125;;<br>float4 f2 = &#123; (float)(sV1V3y * ar) * invFrameWidth, (float)(sV1V3x * ar) * invFrameHeight,(float)((-dv3.x * sV1V3y - dv3.y * sV1V3x) * ar) &#125;;<br><br>float v1 = dv1.z * f1.x + dv2.z * f2.x + dv3.z * f3.x;<br>float v2 = dv1.z * f1.y + dv2.z * f2.y + dv3.z * f3.y;<br>float v3 = dv1.z * f1.z + dv2.z * f2.z + dv3.z * f3.z;<br><br>f1.x *= dv1.w;<br>f1.y *= dv1.w;<br>f1.z *= dv1.w;<br><br>f2.x *= dv2.w;<br>f2.y *= dv2.w;<br>f2.z *= dv2.w;<br><br>f3.x *= dv3.w;<br>f3.y *= dv3.w;<br>f3.z *= dv3.w;<br>dAtriInterpolBase1Aligned[globalInvo] = &#123; f1.x,f1.y,f1.z,f2.x &#125;;<br>dAtriInterpolBase2Aligned[globalInvo] = &#123; f2.y,f2.z,f3.x,f3.y &#125;;<br>dAtriInterpolBase3[globalInvo] = f3.z;<br><br>dAtriDepthVal12[globalInvo].x = v1;<br>dAtriDepthVal12[globalInvo].y = v2;<br>dAtriDepthVal3[globalInvo] = v3;<br></code></pre></td></tr></table></figure>
+
+<h4 id="2-3-2-Primary-Binner"><a href="#2-3-2-Primary-Binner" class="headerlink" title="2.3.2 Primary Binner"></a>2.3.2 Primary Binner</h4><p>后续的流程基于CUDA的Dynamic Parallism进行，即一个Kernel调用另一个Kernel。所有的Kernel<br>参数都在GPU端计算完成，不需要回传CPU发起Kernel调用，这类似于Indirect Draw。</p>
+<p>显然三角形的大小不一致，大三角形覆盖更多的Tile，而小三角形覆盖的Tile更少。对于Tile我们需要维护一个待处理的三角形列表，显然混合处理大小三角形会导致严重的Stall，同一个Warp里小三角形等待大三角形的Binning步骤，这个是不太合理的。项目中使用了两个不同的设备端函数<code>devExecuteBinnerLargeTile</code>和<code>devExecuteBinner</code>分别处理大三角形和小三角形。</p>
+<p>之后将三角形加入Tile列表，具体流程如下：对于每一个三角形和Tile，测试产生三种结果Accept，Reject和Partial。对于Accept的三角形，直接加入Tile列表；Reject的三角形直接丢弃；Partial的三角形则需要进行进一步的处理。</p>
+<ul>
+<li>Accept: 该Tile完全包含该三角形。对三条边给出的Accept Proposal进行测试，完全通过。</li>
+<li>Reject：该Tile完全不包含该三角形。对三条边给出的Reject Proposal进行测试，任意一个不通过。</li>
+<li>Partial：该Tile部分包含该三角形。剩余测试结果归入该类。</li>
+</ul>
+<p>上述测试的思路如下：</p>
+<ul>
+<li><p>Accept Proposal: 对于屏幕空间三角形的任意一条边，计算其屏幕空间朝外的法向量，找到该法向量定义的距离最近的Tile的Corner（例如三角形法向量朝向左上，则AP的测试Proposal为Tile的右下格点）。如果该格点在三角形内部，这一个Proposal测试通过，当3个Proposal都通过时，Tile完全被包含在三角形内。</p>
+</li>
+<li><p>Reject Proposal: 对于屏幕空间三角形的任意一条边，计算其屏幕空间朝外的法向量，找到该法向量定义的距离最远的Tile的Corner（例如三角形法向量朝向左上，则AP的测试Proposal为Tile的左上格点）。如果该格点在三角形外部，这一个Proposal测试被拒绝，当任意一个Proposal测试被拒绝时，Tile完全不被包含在三角形内。</p>
+</li>
+</ul>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><code class="hljs cuda"><br>IFRIT_DEVICE void devGetAcceptRejectCoords(float4 edgeCoefs[3], int chosenCoordTR[3], int chosenCoordTA[3]) &#123;<br>    IF_CONSTEXPR const int VLB = 0, VLT = 1, VRT = 3, VRB = 2;<br>    for (int i = 0; i &lt; 3; i++) &#123;<br>        bool normalRight = edgeCoefs[i].x &lt; 0;<br>        bool normalDown = edgeCoefs[i].y &lt; 0;<br>        if (normalRight) &#123;<br>            if (normalDown) &#123;<br>                chosenCoordTR[i] = VRB;<br>                chosenCoordTA[i] = VLT;<br>            &#125;<br>            else &#123;<br>                chosenCoordTR[i] = VRT;<br>                chosenCoordTA[i] = VLB;<br>            &#125;<br>        &#125;<br>        else &#123;<br>            if (normalDown) &#123;<br>                chosenCoordTR[i] = VLB;<br>                chosenCoordTA[i] = VRT;<br>            &#125;<br>            else &#123;<br>                chosenCoordTR[i] = VLT;<br>                chosenCoordTA[i] = VRB;<br>            &#125;<br>        &#125;<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>对于Large Binner而言，我们遍历当前三角形BBox所覆盖的Tile，对上述Tile执行上述测试。将三角形原子写入Tile列表中。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><code class="hljs cuda">for(...)<br>    if (criteriaTR != 3)<br>        continue;<br>    auto tileLargeId = y * CU_MAX_LARGE_BIN_X + x;<br>    if (criteriaTA == 3) &#123;<br>        int x = atomicAdd(&amp;dCoverQueueSuperTileFullM3TotlCands, 1);<br>        dCoverQueueSuperTileFullM3Buffer[x].x = primitiveId;<br>        dCoverQueueSuperTileFullM3Buffer[x].y = tileLargeId;<br><br>        atomicAdd(&amp;dCoverQueueSuperTileFullM3Size[tileLargeId], 1);<br>    &#125;<br>    else &#123;<br>        auto plId = atomicAdd(&amp;dCoverPrimsLargeTileCounter, 1);<br>        dCoverPrimsTileLarge[plId].x = primitiveId;<br>        dCoverPrimsTileLarge[plId].y = tileLargeId;<br>    &#125;<br></code></pre></td></tr></table></figure>
+
+<p>对于Small Binner和Large Binner的后处理，我们将结果分类。对于Accept三角形直接写<code>dCoverPrim</code>，对于Partial的写<code>dRasterQueueWorklistPrimTile</code>给Second Rasterizer处理。</p>
+<h4 id="2-3-3-Second-Rasterizer"><a href="#2-3-3-Second-Rasterizer" class="headerlink" title="2.3.3 Second Rasterizer"></a>2.3.3 Second Rasterizer</h4><p>Second Rasterizer处理部分被三角形覆盖的Tiles，每一个Proposal包括一个Triangle ID和Tile ID。每一个TG中的Z大小负责处理这个Tile Proposal中的所有Subtile，按照和Primary Binner相同的方式测试。测试成功将写入新的List中。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><code class="hljs cuda">if (criteriaTR == 3) &#123;<br>    int x = atomicAdd(&amp;dSecondBinnerCandCounter, 1);<br>    dSecondBinnerPendingPrim[x].x = primitiveSrcId;<br>    dSecondBinnerPendingPrim[x].y = tileId * CU_MAX_SUBTILES_PER_TILE + subTileId;<br>    atomicAdd(&amp;dSecondBinnerFinerBufferSize[tileId * CU_MAX_SUBTILES_PER_TILE + subTileId], csMsaaSampleBits);<br>&#125;<br></code></pre></td></tr></table></figure>
+<p>后续由Finer Second Binner 处理像素级别的相交测试，这里相交结果使用位运算表示。默认一个Subtile有16个子像素，使用一个uint32_t表示16个子像素的相交结果。每一个子像素的ID为<code>(x * 4 + y)</code>，其中x和y分别为子像素在Subtile中的坐标。另外对于一个Msaa采样点，使用一个独立的uint32_t表示，高位写入当前采样点ID。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><code class="hljs cuda">for (int i2 = 0; i2 &lt; CU_EXPERIMENTAL_PIXELS_PER_SUBTILE; i2++) &#123;<br>    bool accept1 = (criteriaX[0] + criteriaY[0]) &lt; edgeCoefs[0].z + dEps;<br>    bool accept2 = (criteriaX[1] + criteriaY[1]) &lt; edgeCoefs[1].z + dEps;<br>    bool accept3 = (criteriaX[2] + criteriaY[2]) &lt; edgeCoefs[2].z + dEps;<br><br>    int cond = (accept1 &amp;&amp; accept2 &amp;&amp; accept3);<br>    dsMask[i2] |= (cond &lt;&lt; k);<br><br>    if ((i2 + 1) % CU_EXPERIMENTAL_SUBTILE_WIDTH == 0) &#123;<br>        mask |= (cond &lt;&lt; i2);<br>        criteriaY[0] += edgeCoefs[0].y;<br>        criteriaY[1] += edgeCoefs[1].y;<br>        criteriaY[2] += edgeCoefs[2].y;<br>        criteriaX[0] = rsX1;<br>        criteriaX[1] = rsX2;<br>        criteriaX[2] = rsX3;<br>    &#125;<br>    else &#123;<br>        mask |= (cond &lt;&lt; i2); <br>        criteriaX[0] += edgeCoefs[0].x;<br>        criteriaX[1] += edgeCoefs[1].x;<br>        criteriaX[2] += edgeCoefs[2].x;<br>    &#125;<br>&#125;<br><br>if (mask == 0) continue;<br>int xid = xidSrc;<br>int pw = atomicAdd(&amp;dSecondBinnerFinerBufferCurInd[xid], 1);<br>dSecondBinnerFinerBuffer[pw].x = mask | (k &lt;&lt; CU_EXPERIMENTAL_PIXELS_PER_SUBTILE);<br>dSecondBinnerFinerBuffer[pw].y = primitiveSrcId;<br>dSecondBinnerFinerBufferSortKeys[pw] = dAtriOriginalPrimId[primitiveSrcId];<br></code></pre></td></tr></table></figure>
+<h4 id="2-3-4-排序"><a href="#2-3-4-排序" class="headerlink" title="2.3.4 排序"></a>2.3.4 排序</h4><p>这里直接使用一个简单的堆排序，速度不行。默认未开启Alpha Blending，并且没有Depth Write，以及未强制保持渲染顺序的情况下，排序Kernel不会被调用。完成排序后，光栅化步骤结束。</p>
+<h3 id="2-4-片元着色和Alpha混合"><a href="#2-4-片元着色和Alpha混合" class="headerlink" title="2.4 片元着色和Alpha混合"></a>2.4 片元着色和Alpha混合</h3><p>片元着色Kernel一次性处理一个Tile的16x16的像素。其中DimX大小为4，负责一个Quad中的2x2个像素（这样强制一个Quad中的4个像素在一个Warp中，后续计算ddx和ddy不需要任何的同步操作），剩余DimY和DimZ大小为8.</p>
+<p>此后先生成当前线程负责SubTile中所在像素的BitMask<code>dwMask</code>，和该像素对应的Quad的4个像素的BitMask<code>dsMask</code>。之后取出Finer Second Binner在当前SubTile下的某个Triangle，比较光栅化结果Mask是否与<code>dsMask</code>重叠，产生两种结果：</p>
+<ul>
+<li>Sampling Invocation: <code>dwMask</code>与Mask的交集不为0，表示当前像素被三角形覆盖，需要进行片元着色</li>
+<li>Helper Invocation: <code>dwMask</code>与Mask的交集为0，表示当前像素不被三角形覆盖，不需要进行片元着色，但为了保证着色器导数的正确性，仍然需要执行片元着色器。该Invocation的结果会被丢弃。</li>
+</ul>
+<p>在此之前，如果没有Alpha Blending和Depth Write，可以先执行一个Depth Prepass，先执行Early Z，然后将结果和待着色片元分别写入深度缓冲和Tag Buffer中。之后拿Tag Buffer的结果执行PS。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><code class="hljs cuda">auto zPrePass = [&amp;](int primId,int subsample) &#123;<br>    if IF_CONSTEXPR (tpDepthFunc == IF_COMPARE_OP_NEVER) return;<br>    float interpolatedDepth;<br>    float2 v12 = dAtriDepthVal12[primId];<br>    float v3 = dAtriDepthVal3[primId];<br>    interpolatedDepth = v12.x * pDx + v12.y * pDy + v3;<br>    <br>    auto&amp; localDepthVal = (subsample &lt; 0) ? localDepthBuffer : localDepthBufferSubsample[subsample];<br>    auto&amp; localCandPrim = (subsample &lt; 0) ? candidatePrim : candidatePrimSubsample[subsample];<br><br>#define PLACE_COND(cond) if ((cond)) &#123; localDepthVal = interpolatedDepth; localCandPrim = primId;&#125;<br>    if IF_CONSTEXPR (tpDepthFunc == IF_COMPARE_OP_LESS) PLACE_COND(interpolatedDepth &lt; localDepthVal);<br>    if IF_CONSTEXPR (tpDepthFunc == IF_COMPARE_OP_LESS_OR_EQUAL)PLACE_COND(interpolatedDepth &lt;= localDepthVal);<br>    if IF_CONSTEXPR (tpDepthFunc == IF_COMPARE_OP_EQUAL) PLACE_COND(interpolatedDepth == localDepthVal);<br>    if IF_CONSTEXPR (tpDepthFunc == IF_COMPARE_OP_GREATER) PLACE_COND(interpolatedDepth &gt; localDepthVal);<br>    if IF_CONSTEXPR (tpDepthFunc == IF_COMPARE_OP_GREATER_OR_EQUAL) PLACE_COND(interpolatedDepth &gt;= localDepthVal);<br>    if IF_CONSTEXPR (tpDepthFunc == IF_COMPARE_OP_NOT_EQUAL) PLACE_COND(interpolatedDepth != localDepthVal);<br>    if IF_CONSTEXPR (tpDepthFunc == IF_COMPARE_OP_ALWAYS) &#123;<br>        auto&amp; localOrgPrimIdRef = (subsample &lt; 0) ? localOrgPrimId : localOrgPrimIdSubsample[subsample];<br>        if (dAtriOriginalPrimId[primId] &lt; localOrgPrimIdRef) &#123;<br>            localDepthVal = interpolatedDepth;<br>            localOrgPrimIdRef = dAtriOriginalPrimId[primId];<br>            localCandPrim = primId;<br>        &#125;<br>    &#125;<br>#undef PLACE_COND<br>    if IF_CONSTEXPR (CU_PROFILER_OVERDRAW) &#123;<br>        atomicAdd(&amp;dOverZTestCounter, 1);<br>    &#125;<br>&#125;;<br></code></pre></td></tr></table></figure>
+<p>执行PS前，进行插值，之后执行PS。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><code class="hljs cuda">candidateBary[0] = (f1.x * pDx + f1.y * pDy + f1.z);<br>candidateBary[1] = (f2.x * pDx + f2.y * pDy + f2.z);<br>candidateBary[2] = (f3.x * pDx + f3.y * pDy + f3.z);<br>float zCorr = 1.0f / (candidateBary[0] + candidateBary[1] + candidateBary[2]);<br>candidateBary[0] *= zCorr;<br>candidateBary[1] *= zCorr;<br>candidateBary[2] *= zCorr;<br><br>float desiredBary[3];<br>desiredBary[0] = candidateBary[0] * b12.x + candidateBary[1] * b12.z + candidateBary[2] * b3.x;<br>desiredBary[1] = candidateBary[0] * b12.y + candidateBary[1] * b12.w + candidateBary[2] * b3.y;<br>desiredBary[2] = 1.0f - (desiredBary[0] + desiredBary[1]);<br></code></pre></td></tr></table></figure>
+
+<p>如果启用了Alpha Blending，则根据当前Triangle在这个Pixel中采样占比着色</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><code class="hljs cuda">auto mxSrcX = (blendParam.s.x + blendParam.s.y * (1 - srcRgba.w) + blendParam.s.z * (1 - dstRgba.w)) * (1-blendParam.s.w);<br>auto mxDstX = (blendParam.d.x + blendParam.d.y * (1 - srcRgba.w) + blendParam.d.z * (1 - dstRgba.w)) * (1-blendParam.d.w);<br>auto mxSrcA = (blendParamAlpha.s.x + blendParamAlpha.s.y * (1 - srcRgba.w) + blendParamAlpha.s.z * (1 - dstRgba.w)) * (1-blendParamAlpha.s.w);<br>auto mxDstA = (blendParamAlpha.d.x + blendParamAlpha.d.y * (1 - srcRgba.w) + blendParamAlpha.d.z * (1 - dstRgba.w)) * (1-blendParamAlpha.d.w);<br><br>mixRgba.x = dstRgba.x * mxDstX + srcRgba.x * mxSrcX;<br>mixRgba.y = dstRgba.y * mxDstX + srcRgba.y * mxSrcX;<br>mixRgba.z = dstRgba.z * mxDstX + srcRgba.z * mxSrcX;<br>mixRgba.w = dstRgba.w * mxDstA + srcRgba.w * mxSrcA;<br><br>col0[pixelYS * csFrameWidth + pixelXS] = mixRgba;<br>dDepthBuffer[pixelYS * csFrameWidth + pixelXS] = tDepth;<br></code></pre></td></tr></table></figure>
+
+
+
+<h2 id="3-部分特性实现"><a href="#3-部分特性实现" class="headerlink" title="3. 部分特性实现"></a>3. 部分特性实现</h2><h3 id="3-1-双缓冲和流重叠"><a href="#3-1-双缓冲和流重叠" class="headerlink" title="3.1 双缓冲和流重叠"></a>3.1 双缓冲和流重叠</h3><p>双缓冲的实现是通过CUDA的流来实现的。当前一帧的结果正在回传时，我们能先渲染下一帧。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><code class="hljs cuda">std::chrono::high_resolution_clock::time_point end2 = std::chrono::high_resolution_clock::now();<br>if (args.doubleBuffering) &#123;<br>    for (int i = 0; i &lt; args.dHostColorBufferSize; i++) &#123;<br>        if IF_CONSTEXPR (CU_PROFILER_ENABLE_MEMCPY) &#123;<br>            cudaMemcpyAsync(args.hColorBuffer[i], args.dLastColorBuffer[i], Impl::hsFrameWidth * Impl::hsFrameHeight * sizeof(Vector4f), cudaMemcpyDeviceToHost, copyStream);<br>        &#125;<br>    &#125;<br>&#125;<br>cudaStreamSynchronize(computeStream);<br>if (args.doubleBuffering) &#123;<br>    cudaStreamSynchronize(copyStream);<br>&#125;<br>if (!args.doubleBuffering) &#123;<br>    for (int i = 0; i &lt; args.dHostColorBufferSize; i++) &#123;<br>        cudaMemcpy(args.hColorBuffer[i], args.dHostColorBuffer[i], Impl::hsFrameWidth * Impl::hsFrameHeight * sizeof(Vector4f), cudaMemcpyDeviceToHost);<br>    &#125;<br>&#125;<br><br></code></pre></td></tr></table></figure>
+                
+              </div>
+            
+            <hr/>
+            <div>
+              <div class="post-metas my-3">
+  
+  
+    <div class="post-meta">
+      <i class="iconfont icon-tags"></i>
+      
+        <a href="/Ibuki/tags/T-%E5%B9%B6%E8%A1%8C%E8%AE%A1%E7%AE%97/" class="print-no-link">#T:并行计算</a>
+      
+        <a href="/Ibuki/tags/T-%E5%9B%BE%E5%BD%A2%E5%AD%A6/" class="print-no-link">#T:图形学</a>
+      
+        <a href="/Ibuki/tags/L-CUDA/" class="print-no-link">#L:CUDA</a>
+      
+        <a href="/Ibuki/tags/L-C/" class="print-no-link">#L:C++</a>
+      
+        <a href="/Ibuki/tags/P-Ifrit-v2/" class="print-no-link">#P:Ifrit-v2</a>
+      
+        <a href="/Ibuki/tags/T-%E5%87%A0%E4%BD%95/" class="print-no-link">#T:几何</a>
+      
+    </div>
+  
+</div>
+
+
+              
+  
+
+  <div class="license-box my-3">
+    <div class="license-title">
+      <div>Ifrit-v2 过程记录 1: CUDA软件渲染的实现流程</div>
+      <div>http://example.com/2025/04/23/ifrit-report-1/</div>
+    </div>
+    <div class="license-meta">
+      
+        <div class="license-meta-item">
+          <div>Author</div>
+          <div>funkybirds(Aeroraven)</div>
+        </div>
+      
+      
+        <div class="license-meta-item license-meta-date">
+          <div>Posted on</div>
+          <div>April 23, 2025</div>
+        </div>
+      
+      
+      
+        <div class="license-meta-item">
+          <div>Licensed under</div>
+          <div>
+            
+              
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="BY - Attribution">
+                    <i class="iconfont icon-cc-by"></i>
+                  </span>
+                </a>
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="NC - Non-commercial">
+                    <i class="iconfont icon-cc-nc"></i>
+                  </span>
+                </a>
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="SA - Share-alike">
+                    <i class="iconfont icon-cc-sa"></i>
+                  </span>
+                </a>
+              
+            
+          </div>
+        </div>
+      
+    </div>
+    <div class="license-icon iconfont"></div>
+  </div>
+
+
+
+              
+                <div class="post-prevnext my-3">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/Ibuki/2025/04/23/ifrit-report-2/" title="Ifrit-v2 过程记录 2: SIMD和CPU多线程">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">Ifrit-v2 过程记录 2: SIMD和CPU多线程</span>
+                        <span class="visible-mobile">Previous</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar" style="margin-left: -1rem">
+    <div id="toc">
+  <p class="toc-header">
+    <i class="iconfont icon-list"></i>
+    <span>Table of Contents</span>
+  </p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+
+
+  </aside>
+
+
+    </div>
+  </div>
+</div>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+  
+  
+
+
+
+
+
+
+
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">Search</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v" for="local-search-input">Keyword</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    
+
+    
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+  
+    <div class="footer-content">
+       <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+    </div>
+  
+  
+  
+</div>
+
+  </footer>
+
+  <!-- Scripts -->
+  
+  <script  src="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://lib.baomitu.com/jquery/3.6.4/jquery.min.js" ></script>
+<script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
+<script  src="/Ibuki/js/events.js" ></script>
+<script  src="/Ibuki/js/plugins.js" ></script>
+
+
+  <script  src="https://lib.baomitu.com/typed.js/2.0.12/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var subtitle = document.getElementById('subtitle');
+      if (!subtitle || !typing) {
+        return;
+      }
+      var text = subtitle.getAttribute('data-typed-text');
+      
+        typing(text);
+      
+    })(window, document);
+  </script>
+
+
+
+
+  
+    <script  src="/Ibuki/js/img-lazyload.js" ></script>
+  
+
+
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/tocbot/4.20.1/tocbot.min.js', function() {
+    var toc = jQuery('#toc');
+    if (toc.length === 0 || !window.tocbot) { return; }
+    var boardCtn = jQuery('#board-ctn');
+    var boardTop = boardCtn.offset().top;
+
+    window.tocbot.init(Object.assign({
+      tocSelector     : '#toc-body',
+      contentSelector : '.markdown-body',
+      linkClass       : 'tocbot-link',
+      activeLinkClass : 'tocbot-active-link',
+      listClass       : 'tocbot-list',
+      isCollapsedClass: 'tocbot-is-collapsed',
+      collapsibleClass: 'tocbot-is-collapsible',
+      scrollSmooth    : true,
+      includeTitleTags: true,
+      headingsOffset  : -boardTop,
+    }, CONFIG.toc));
+    if (toc.find('.toc-list-item').length > 0) {
+      toc.css('visibility', 'visible');
+    }
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('tocbot' in window) {
+        tocbot.refresh();
+        var toc = jQuery('#toc');
+        if (toc.length === 0 || !tocbot) {
+          return;
+        }
+        if (toc.find('.toc-list-item').length > 0) {
+          toc.css('visibility', 'visible');
+        }
+      }
+    });
+  });
+</script>
+
+
+  <script src=https://lib.baomitu.com/clipboard.js/2.0.11/clipboard.min.js></script>
+
+  <script>Fluid.plugins.codeWidget();</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/anchor-js/5.0.0/anchor.min.js', function() {
+    window.anchors.options = {
+      placement: CONFIG.anchorjs.placement,
+      visible  : CONFIG.anchorjs.visible
+    };
+    if (CONFIG.anchorjs.icon) {
+      window.anchors.options.icon = CONFIG.anchorjs.icon;
+    }
+    var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+    var res = [];
+    for (var item of el) {
+      res.push('.markdown-body > ' + item.trim());
+    }
+    if (CONFIG.anchorjs.placement === 'left') {
+      window.anchors.options.class = 'anchorjs-link-left';
+    }
+    window.anchors.add(res.join(', '));
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('anchors' in window) {
+        anchors.removeAll();
+        var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+        var res = [];
+        for (var item of el) {
+          res.push('.markdown-body > ' + item.trim());
+        }
+        if (CONFIG.anchorjs.placement === 'left') {
+          anchors.options.class = 'anchorjs-link-left';
+        }
+        anchors.add(res.join(', '));
+      }
+    });
+  });
+</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.js', function() {
+    Fluid.plugins.fancyBox();
+  });
+</script>
+
+
+  <script>Fluid.plugins.imageCaption();</script>
+
+  
+      <script>
+        if (!window.MathJax) {
+          window.MathJax = {
+            tex    : {
+              inlineMath: { '[+]': [['$', '$']] }
+            },
+            loader : {
+              load: ['ui/lazy']
+            },
+            options: {
+              renderActions: {
+                insertedScript: [200, () => {
+                  document.querySelectorAll('mjx-container').forEach(node => {
+                    let target = node.parentNode;
+                    if (target.nodeName.toLowerCase() === 'li') {
+                      target.parentNode.classList.add('has-jax');
+                    }
+                  });
+                }, '', false]
+              }
+            }
+          };
+        } else {
+          MathJax.startup.document.state(0);
+          MathJax.texReset();
+          MathJax.typeset();
+          MathJax.typesetPromise();
+        }
+
+        Fluid.events.registerRefreshCallback(function() {
+          if ('MathJax' in window && MathJax.startup.document && typeof MathJax.startup.document.state === 'function') {
+            MathJax.startup.document.state(0);
+            MathJax.texReset();
+            MathJax.typeset();
+            MathJax.typesetPromise();
+          }
+        });
+      </script>
+    
+
+  <script  src="https://lib.baomitu.com/mathjax/3.2.2/es5/tex-mml-chtml.js" ></script>
+
+  <script  src="/Ibuki/js/local-search.js" ></script>
+
+
+
+
+
+<!-- 主题的启动项，将它保持在最底部 -->
+<!-- the boot of the theme, keep it at the bottom -->
+<script  src="/Ibuki/js/boot.js" ></script>
+
+
+  
+
+  <noscript>
+    <div class="noscript-warning">Blog works best with JavaScript enabled</div>
+  </noscript>
+</body>
+</html>

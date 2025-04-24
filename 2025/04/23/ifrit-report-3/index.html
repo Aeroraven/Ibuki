@@ -1,0 +1,804 @@
+
+
+<!DOCTYPE html>
+<html lang="en" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+
+  <link rel="apple-touch-icon" sizes="76x76" href="/Ibuki/img/fluid.png">
+  <link rel="icon" href="/Ibuki/img/fluid.png">
+  
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="author" content="funkybirds(Aeroraven)">
+  <meta name="keywords" content="">
+  
+    <meta name="description" content="Ifrit-v2 过程记录 3: Vulkan绘制流程1. 第一个三角形1.1 创建VkInstance在Vulkan中，首先需要创建一个VkInstance。VkInstance是Vulkan的上下文，包含了Vulkan的所有信息。创建VkInstance前需要填上VkApplicationInfo结构体，包含了应用程序的名称、版本、Vulkan版本等信息。由于Ifrit-v2涉及一些1.3 S">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Ifrit-v2 过程记录 3: Vulkan绘制流程">
+<meta property="og:url" content="http://example.com/2025/04/23/ifrit-report-3/index.html">
+<meta property="og:site_name" content="Funkybirds">
+<meta property="og:description" content="Ifrit-v2 过程记录 3: Vulkan绘制流程1. 第一个三角形1.1 创建VkInstance在Vulkan中，首先需要创建一个VkInstance。VkInstance是Vulkan的上下文，包含了Vulkan的所有信息。创建VkInstance前需要填上VkApplicationInfo结构体，包含了应用程序的名称、版本、Vulkan版本等信息。由于Ifrit-v2涉及一些1.3 S">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2025-04-23T10:44:41.321Z">
+<meta property="article:modified_time" content="2025-04-24T19:01:38.501Z">
+<meta property="article:author" content="funkybirds(Aeroraven)">
+<meta property="article:tag" content="L:C++">
+<meta property="article:tag" content="P:Ifrit-v2">
+<meta property="article:tag" content="T:操作系统">
+<meta property="article:tag" content="L:Vulkan">
+<meta name="twitter:card" content="summary_large_image">
+  
+  
+  
+  <title>Ifrit-v2 过程记录 3: Vulkan绘制流程 - Funkybirds</title>
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
+
+
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/github-markdown-css/4.0.0/github-markdown.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/hint.css/2.7.0/hint.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+<!-- Do not modify the link that theme dependent icons -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1749284_5i9bdhy70f8.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1736178_k526ubmyhba.css">
+
+
+<link  rel="stylesheet" href="/Ibuki/css/main.css" />
+
+
+  <link id="highlight-css" rel="stylesheet" href="/Ibuki/css/highlight.css" />
+  
+    <link id="highlight-css-dark" rel="stylesheet" href="/Ibuki/css/highlight-dark.css" />
+  
+
+
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    Fluid.ctx = Object.assign({}, Fluid.ctx)
+    var CONFIG = {"hostname":"example.com","root":"/Ibuki/","version":"1.9.8","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false,"scope":[]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":{"measurement_id":null},"tencent":{"sid":null,"cid":null},"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false},"umami":{"src":null,"website_id":null,"domains":null,"start_time":"2024-01-01T00:00:00.000Z","token":null,"api_server":null}},"search_path":"/Ibuki/local-search.xml","include_content_in_search":true};
+
+    if (CONFIG.web_analytics.follow_dnt) {
+      var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
+      Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
+    }
+  </script>
+  <script  src="/Ibuki/js/utils.js" ></script>
+  <script  src="/Ibuki/js/color-schema.js" ></script>
+  
+
+
+  
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+
+<body>
+  
+
+  <header>
+    
+
+<div class="header-inner" style="height: 70vh;">
+  <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/Ibuki/">
+      <strong>Funkybirds-MK2</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/Ibuki/" target="_self">
+                <i class="iconfont icon-home-fill"></i>
+                <span>Home</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/Ibuki/archives/" target="_self">
+                <i class="iconfont icon-archive-fill"></i>
+                <span>Archives</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/Ibuki/categories/" target="_self">
+                <i class="iconfont icon-category-fill"></i>
+                <span>Categories</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/Ibuki/tags/" target="_self">
+                <i class="iconfont icon-tags-fill"></i>
+                <span>Tags</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/Ibuki/about/" target="_self">
+                <i class="iconfont icon-user-fill"></i>
+                <span>About</span>
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <i class="iconfont icon-search"></i>
+            </a>
+          </li>
+          
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">
+              <i class="iconfont icon-dark" id="color-toggle-icon"></i>
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+  
+
+<div id="banner" class="banner" parallax=true
+     style="background: url('/Ibuki/img/default.png') no-repeat center center; background-size: cover;">
+  <div class="full-bg-img">
+    <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+      <div class="banner-text text-center fade-in-up">
+        <div class="h2">
+          
+            <span id="subtitle" data-typed-text="Ifrit-v2 过程记录 3: Vulkan绘制流程"></span>
+          
+        </div>
+
+        
+          
+  <div class="mt-3">
+    
+    
+      <span class="post-meta">
+        <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+        <time datetime="2025-04-23 18:44" pubdate>
+          April 23, 2025 pm
+        </time>
+      </span>
+    
+  </div>
+
+  <div class="mt-1">
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-chart"></i>
+        
+          3.2k words
+        
+      </span>
+    
+
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-clock-fill"></i>
+        
+        
+        
+          27 mins
+        
+      </span>
+    
+
+    
+    
+  </div>
+
+
+        
+      </div>
+
+      
+    </div>
+  </div>
+</div>
+
+</div>
+
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+
+    </div>
+
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div id="board">
+          <article class="post-content mx-auto">
+            <h1 id="seo-header">Ifrit-v2 过程记录 3: Vulkan绘制流程</h1>
+            
+            
+              <div class="markdown-body">
+                
+                <h1 id="Ifrit-v2-过程记录-3-Vulkan绘制流程"><a href="#Ifrit-v2-过程记录-3-Vulkan绘制流程" class="headerlink" title="Ifrit-v2 过程记录 3: Vulkan绘制流程"></a>Ifrit-v2 过程记录 3: Vulkan绘制流程</h1><h2 id="1-第一个三角形"><a href="#1-第一个三角形" class="headerlink" title="1. 第一个三角形"></a>1. 第一个三角形</h2><h3 id="1-1-创建VkInstance"><a href="#1-1-创建VkInstance" class="headerlink" title="1.1 创建VkInstance"></a>1.1 创建VkInstance</h3><p>在Vulkan中，首先需要创建一个VkInstance。VkInstance是Vulkan的上下文，包含了Vulkan的所有信息。创建VkInstance前需要填上VkApplicationInfo结构体，包含了应用程序的名称、版本、Vulkan版本等信息。由于Ifrit-v2涉及一些1.3 Spec的核心特性，这里版本填Vulkan 1.3。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><code class="hljs cpp">VkApplicationInfo appInfo  = &#123;&#125;;<br>appInfo.sType              = VK_STRUCTURE_TYPE_APPLICATION_INFO;<br>appInfo.pApplicationName   = <span class="hljs-string">&quot;&quot;</span>;<br>appInfo.applicationVersion = <span class="hljs-built_in">VK_MAKE_VERSION</span>(<span class="hljs-number">1</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>);<br>appInfo.pEngineName        = <span class="hljs-string">&quot;Ifrit-v2&quot;</span>;<br>appInfo.engineVersion      = <span class="hljs-built_in">VK_MAKE_VERSION</span>(<span class="hljs-number">1</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>);<br>appInfo.apiVersion         = VK_API_VERSION_1_3;<br></code></pre></td></tr></table></figure>
+
+<p>然后需要填上我们需要用到的Layers和Extensions。首先拿到由GLFW（此处由<code>ifrit.display.dll</code>抽象）窗口要求的Extensions。对于Layer，我们简单启用验证层即可。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><code class="hljs cpp"><span class="hljs-keyword">if</span> (m_args.m_extensionGetter)<br>&#123;<br>    u32          extensionCountExtra = <span class="hljs-number">0</span>;<br>    <span class="hljs-type">const</span> <span class="hljs-type">char</span>** extensionsExtra     = m_args.<span class="hljs-built_in">m_extensionGetter</span>(&amp;extensionCountExtra);<br>    <span class="hljs-keyword">for</span> (u32 i = <span class="hljs-number">0</span>; i &lt; extensionCountExtra; i++)<br>    &#123;<br>        <span class="hljs-built_in">EnableExtension</span>(<span class="hljs-literal">true</span>, extensionsExtra[i], availableExtensions, targetExtensions);<br>    &#125;<br>&#125;<br><br><span class="hljs-keyword">if</span> (m_args.m_enableValidationLayer)<br>&#123;<br>    <span class="hljs-built_in">EnableExtension</span>(<span class="hljs-literal">true</span>, VK_EXT_DEBUG_UTILS_EXTENSION_NAME, availableExtensions, targetExtensions);<br>&#125;<br><span class="hljs-keyword">for</span> (<span class="hljs-keyword">auto</span> ext : m_instanceExtension)<br>&#123;<br>    <span class="hljs-built_in">EnableExtension</span>(<span class="hljs-literal">true</span>, ext, availableExtensions, targetExtensions);<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>然后填上我们的<code>VkInstanceCreateInfo</code>结构体，创建VkInstance。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs cpp"><span class="hljs-built_in">vkrVulkanAssert</span>(<span class="hljs-built_in">vkCreateInstance</span>(&amp;instanceCI, <span class="hljs-literal">nullptr</span>, &amp;m_instance), <span class="hljs-string">&quot;Failed to create Vulkan instance&quot;</span>);<br></code></pre></td></tr></table></figure>
+
+<h3 id="1-2-获取物理设备和队列族-Queue-Familiy"><a href="#1-2-获取物理设备和队列族-Queue-Familiy" class="headerlink" title="1.2 获取物理设备和队列族(Queue Familiy)"></a>1.2 获取物理设备和队列族(Queue Familiy)</h3><p>在建立VkInstance后，我们需要获取物理设备。物理设备是Vulkan的核心，包含了Vulkan的所有信息。我们可以通过<code>vkEnumeratePhysicalDevices</code>函数获取物理设备列表。这里我们暂时希望选择一个独立显卡（Discrete GPU），如果没有则选择集成显卡（Integrated GPU）。如果没有，则返回错误。相同情况则选择支持分辨率最高的GPU。完成后，我们把物理设备的属性信息填入<code>m_phyDeviceProperties</code>中。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><code class="hljs cpp">u32 physicalDeviceCount = <span class="hljs-number">0</span>;<br><span class="hljs-built_in">vkrVulkanAssert</span>(<span class="hljs-built_in">vkEnumeratePhysicalDevices</span>(m_instance, &amp;physicalDeviceCount, <span class="hljs-literal">nullptr</span>),<br>    <span class="hljs-string">&quot;Failed to enumerate physical devices&quot;</span>);<br><span class="hljs-function">Vec&lt;VkPhysicalDevice&gt; <span class="hljs-title">physicalDevices</span><span class="hljs-params">(physicalDeviceCount)</span></span>;<br><span class="hljs-built_in">vkrVulkanAssert</span>(<span class="hljs-built_in">vkEnumeratePhysicalDevices</span>(m_instance, &amp;physicalDeviceCount, physicalDevices.<span class="hljs-built_in">data</span>()),<br>    <span class="hljs-string">&quot;Failed to enumerate physical devices&quot;</span>);<br><br>VkPhysicalDevice bestDevice = VK_NULL_HANDLE;<br><span class="hljs-type">int</span>              bestScore  = <span class="hljs-number">0</span>;<br>String           bestName;<br><span class="hljs-keyword">for</span> (<span class="hljs-keyword">auto</span> device : physicalDevices)<br>&#123;<br>    String name;<br>    <span class="hljs-type">int</span>    score = <span class="hljs-built_in">PhysicalDeviceRanking</span>(device, &amp;name);<br>    <span class="hljs-keyword">if</span> (score &gt; bestScore)<br>    &#123;<br>        bestScore  = score;<br>        bestDevice = device;<br>        bestName   = name;<br>    &#125;<br>&#125;<br><br><span class="hljs-built_in">vkGetPhysicalDeviceProperties</span>(m_physicalDevice, &amp;m_phyDeviceProperties);<br></code></pre></td></tr></table></figure>
+
+<p>队列是Vulkan命令提交的目标对象。Vulkan将Command Buffer提交到队列，队列会将Command Buffer提交到GPU执行。Vulkan的队列是异步的，提交后不会等待GPU执行完成。一个物理设备包含不同类型的队列，每一组队列都包含相同的功能子集，这些队列组成了一个队列族。我们可以通过<code>vkGetPhysicalDeviceQueueFamilyProperties</code>函数获取物理设备的队列族属性。目前我们先拿到所有队列族，对于功能的处理，我们后续再进行考虑。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><code class="hljs cpp">u32 queueFamilyCount = <span class="hljs-number">0</span>;<br><span class="hljs-built_in">vkGetPhysicalDeviceQueueFamilyProperties</span>(bestDevice, &amp;queueFamilyCount, <span class="hljs-literal">nullptr</span>);<br><span class="hljs-function">Vec&lt;VkQueueFamilyProperties&gt; <span class="hljs-title">queueFamilies</span><span class="hljs-params">(queueFamilyCount)</span></span>;<br><span class="hljs-built_in">vkGetPhysicalDeviceQueueFamilyProperties</span>(bestDevice, &amp;queueFamilyCount, queueFamilies.<span class="hljs-built_in">data</span>());<br><span class="hljs-keyword">for</span> (u32 i = <span class="hljs-number">0</span>; i &lt; queueFamilyCount; i++)<br>&#123;<br>    DeviceQueueInfo::DeviceQueueFamily family;<br>    family.m_familyIndex = i;<br>    family.m_queueCount  = queueFamilies[i].queueCount;<br>    family.m_capability  = queueFamilies[i].queueFlags;<br>    m_queueInfo.m_queueFamilies.<span class="hljs-built_in">push_back</span>(family);<br>&#125;<br><br><span class="hljs-comment">// Queue Creation</span><br>Vec&lt;VkDeviceQueueCreateInfo&gt; queueCreateInfos;<br>Vec&lt;Vec&lt;<span class="hljs-type">float</span>&gt;&gt;              queuePriorities;<br><span class="hljs-keyword">for</span> (<span class="hljs-keyword">auto</span> family : m_queueInfo.m_queueFamilies)<br>&#123;<br>    VkDeviceQueueCreateInfo queueCreateInfo = &#123;&#125;;<br>    queueCreateInfo.sType                   = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;<br>    queueCreateInfo.queueFamilyIndex        = family.m_familyIndex;<br>    queueCreateInfo.queueCount              = family.m_queueCount;<br>    queuePriorities.<span class="hljs-built_in">push_back</span>(<span class="hljs-built_in">Vec</span>&lt;<span class="hljs-type">float</span>&gt;(family.m_queueCount, <span class="hljs-number">1.0f</span>));<br>    queueCreateInfo.pQueuePriorities = queuePriorities.<span class="hljs-built_in">back</span>().<span class="hljs-built_in">data</span>();<br>    queueCreateInfos.<span class="hljs-built_in">push_back</span>(queueCreateInfo);<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>队列有3种类型：图形队列（Graphics Queue）、计算队列（Compute Queue）和传输队列（Transfer Queue）。虽然一个队列族可以包含多种类型的队列，但我们在这里只需要图形队列。我们可以通过<code>VK_QUEUE_GRAPHICS_BIT</code>来判断一个队列是否是图形队列。同样地，我们获取计算队列（用于Async Compute）和传输队列，虽然现在还用不到，但我们先把他们存起来 &gt;_&lt;</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><code class="hljs cpp"><span class="hljs-keyword">if</span> (queueFamilies[i].queueFlags &amp; VK_QUEUE_GRAPHICS_BIT)<br>&#123;<br>    m_queueInfo.m_graphicsQueues.<span class="hljs-built_in">push_back</span>(queue);<br>&#125;<br><span class="hljs-keyword">if</span> (queueFamilies[i].queueFlags &amp; VK_QUEUE_COMPUTE_BIT)<br>&#123;<br>    m_queueInfo.m_computeQueues.<span class="hljs-built_in">push_back</span>(queue);<br>&#125;<br><span class="hljs-keyword">if</span> (queueFamilies[i].queueFlags &amp; VK_QUEUE_TRANSFER_BIT)<br>&#123;<br>    m_queueInfo.m_transferQueues.<span class="hljs-built_in">push_back</span>(queue);<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h3 id="1-3-创建Logical-Device"><a href="#1-3-创建Logical-Device" class="headerlink" title="1.3 创建Logical Device"></a>1.3 创建Logical Device</h3><p>逻辑设备是用于与物理设备交互的抽象。 同样地，我们填上我们的应用程序（当前的Logical Device）需要的功能和扩展，以及要使用的队列族。我们需要使用<code>vkCreateDevice</code>函数创建逻辑设备。我们用到了一些Vulkan 1.2以后的特性，例如Bindless所需要的描述符索引 （Descriptor Indexing）和动态渲染等。我们将这些特性插入到<code>pNext</code>中去。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><code class="hljs cpp">VkDeviceCreateInfo deviceCI   = &#123;&#125;;<br>deviceCI.sType                = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;<br>deviceCI.queueCreateInfoCount = <span class="hljs-built_in">SizeCast</span>&lt;u32&gt;(queueCreateInfos.<span class="hljs-built_in">size</span>());<br>deviceCI.pQueueCreateInfos    = queueCreateInfos.<span class="hljs-built_in">data</span>();<br>deviceCI.pEnabledFeatures     = &amp;deviceFeatures;<br>deviceCI.pNext                = &amp;deviceFeatures12;<br>deviceCI.enabledExtensionCount   = <span class="hljs-built_in">SizeCast</span>&lt;u32&gt;(tarGetDeviceExtensions.<span class="hljs-built_in">size</span>());<br>deviceCI.ppEnabledExtensionNames = tarGetDeviceExtensions.<span class="hljs-built_in">data</span>();<br>deviceCI.enabledLayerCount   = <span class="hljs-built_in">SizeCast</span>&lt;u32&gt;(targetLayersDevice.<span class="hljs-built_in">size</span>());<br>deviceCI.ppEnabledLayerNames = targetLayersDevice.<span class="hljs-built_in">data</span>();<br></code></pre></td></tr></table></figure>
+<p>这里的 <code>pNext</code>是组成了一个链表的结构体。我们可以在这个链表中插入我们需要的特性。例如组装Mesh Shader和纹理的64位整数原子访问。当然在此之前，我们需要添加Instance层级的扩展，然后加到<code>ppEnabledExtensionNames</code>中。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><code class="hljs cpp">meshShaderFeatures.sType      = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MESH_SHADER_FEATURES_EXT;<br>meshShaderFeatures.taskShader = VK_TRUE;<br>meshShaderFeatures.meshShader = VK_TRUE;<br>meshShaderFeatures.pNext      = &amp;shaderImageAtomicInt64Features;<br><br>shaderImageAtomicInt64Features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_IMAGE_ATOMIC_INT64_FEATURES_EXT;<br>shaderImageAtomicInt64Features.shaderImageInt64Atomics = VK_TRUE;<br></code></pre></td></tr></table></figure>
+<p>填完后，我们就可以创建Logical Device了。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs cpp"><span class="hljs-built_in">vkrVulkanAssert</span>(<span class="hljs-built_in">vkCreateDevice</span>(bestDevice, &amp;deviceCI, <span class="hljs-literal">nullptr</span>, &amp;m_device), <span class="hljs-string">&quot;Failed to create logical device&quot;</span>);<br></code></pre></td></tr></table></figure>
+
+<h3 id="1-4-创建Swapchain"><a href="#1-4-创建Swapchain" class="headerlink" title="1.4 创建Swapchain"></a>1.4 创建Swapchain</h3><p>Vulkan是一个平台无关的API，为了将图像显示到屏幕上，我们需要使用WSI（Window System Integration）扩展。这里使用过<code>VK_KHR_Surface</code>扩展提供的Surface来完成这一个步骤。目前我们只考虑Windows，这部分代码如下：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><code class="hljs cpp">m_hInstance = m_context-&gt;<span class="hljs-built_in">GetArgs</span>().m_win<span class="hljs-number">32.</span>m_hInstance;<br>m_hWnd      = m_context-&gt;<span class="hljs-built_in">GetArgs</span>().m_win<span class="hljs-number">32.</span>m_hWnd;<br>VkWin32SurfaceCreateInfoKHR surfaceCI&#123;&#125;;<br>surfaceCI.sType     = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;<br>surfaceCI.hinstance = (HINSTANCE)m_hInstance;<br>surfaceCI.hwnd      = (HWND)m_hWnd;<br><span class="hljs-built_in">vkrVulkanAssert</span>(<span class="hljs-built_in">vkCreateWin32SurfaceKHR</span>(m_context-&gt;<span class="hljs-built_in">GetInstance</span>(), &amp;surfaceCI, <span class="hljs-literal">nullptr</span>, &amp;m_surface),<br>    <span class="hljs-string">&quot;Failed to create window surface&quot;</span>);<br></code></pre></td></tr></table></figure>
+
+<p>之后我们考虑创建Swapchain。Swapchain是Vulkan中用于交换图像的对象。大致过程把图像画到Swapchain上，然后交换到屏幕上。我们需要使用<code>vkCreateSwapchainKHR</code>函数创建Swapchain。我们需要填上Swapchain的创建信息，包括图像格式、图像数量、交换链的宽高等信息。我们可以通过<code>vkGetPhysicalDeviceSurfaceCapabilitiesKHR</code>函数获取物理设备的表面能力。目前我们的默认配置如下：</p>
+<ul>
+<li>图像格式：默认<code>VK_FORMAT_B8G8R8A8_SRGB</code>优先</li>
+<li>Present模式：默认<code>VK_PRESENT_MODE_MAILBOX_KHR</code>否则<code>VK_PRESENT_MODE_FIFO_KHR</code><ul>
+<li><code>VK_PRESENT_MODE_FIFO_KHR</code>: 显示器从队列中获取图像并显示，程序在尾部插入图像。队列满则等待。</li>
+<li><code>VK_PRESENT_MODE_MAILBOX_KHR</code>: 显示器从队列中获取图像并显示，程序在头部插入图像。队列满则丢弃图像写入。</li>
+</ul>
+</li>
+<li>图像数量：默认由程序的<code>m_expectedSwapchainImageCount</code>决定，至少2个保证能够InFlight（CPU处理当前帧，GPU处理上一帧）交换。</li>
+<li>队列族：默认图形队列族</li>
+</ul>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><code class="hljs cpp">VkSwapchainCreateInfoKHR swapchainCI&#123;&#125;;<br>swapchainCI.sType            = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;<br>swapchainCI.surface          = m_surface;<br>swapchainCI.minImageCount    = m_backbufferCount;<br>swapchainCI.imageFormat      = m_preferredSurfaceFormat.format;<br>swapchainCI.imageColorSpace  = m_preferredSurfaceFormat.colorSpace;<br>swapchainCI.imageExtent      = m_extent;<br>swapchainCI.imageArrayLayers = <span class="hljs-number">1</span>;<br>swapchainCI.imageUsage       = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;<br><br>swapchainCI.imageSharingMode      = VK_SHARING_MODE_EXCLUSIVE;<br>swapchainCI.queueFamilyIndexCount = <span class="hljs-number">0</span>;<br>swapchainCI.pQueueFamilyIndices   = <span class="hljs-literal">nullptr</span>;<br><br>swapchainCI.preTransform   = m_supportDetails.capabilities.currentTransform;<br>swapchainCI.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;<br>swapchainCI.presentMode    = m_preferredPresentMode;<br>swapchainCI.clipped        = VK_TRUE;<br>swapchainCI.oldSwapchain   = VK_NULL_HANDLE;<br><br><span class="hljs-built_in">vkrVulkanAssert</span>(<span class="hljs-built_in">vkCreateSwapchainKHR</span>(m_context-&gt;<span class="hljs-built_in">GetDevice</span>(), &amp;swapchainCI, <span class="hljs-literal">nullptr</span>, &amp;m_swapchain),<br>    <span class="hljs-string">&quot;Failed to create swapchain&quot;</span>);<br></code></pre></td></tr></table></figure>
+
+<p>之后，我们获取Swapchain的图像，然后为这些图像创建ImageView（定义了访问这些图像的方式）</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><code class="hljs cpp">u32 imageCount;<br><span class="hljs-built_in">vkGetSwapchainImagesKHR</span>(m_context-&gt;<span class="hljs-built_in">GetDevice</span>(), m_swapchain, &amp;imageCount, <span class="hljs-literal">nullptr</span>);<br>m_images.<span class="hljs-built_in">resize</span>(imageCount);<br><span class="hljs-built_in">vkGetSwapchainImagesKHR</span>(m_context-&gt;<span class="hljs-built_in">GetDevice</span>(), m_swapchain, &amp;imageCount, m_images.<span class="hljs-built_in">data</span>());<br><br><span class="hljs-comment">// Create image views</span><br>m_imageViews.<span class="hljs-built_in">resize</span>(imageCount);<br><span class="hljs-keyword">for</span> (<span class="hljs-type">int</span> i = <span class="hljs-number">0</span>; i &lt; <span class="hljs-built_in">static_cast</span>&lt;<span class="hljs-type">int</span>&gt;(imageCount); i++)<br>&#123;<br>    VkImageViewCreateInfo imageViewCI&#123;&#125;;<br>    imageViewCI.sType                           = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;<br>    imageViewCI.image                           = m_images[i];<br>    imageViewCI.viewType                        = VK_IMAGE_VIEW_TYPE_2D;<br>    imageViewCI.format                          = m_preferredSurfaceFormat.format;<br>    imageViewCI.components.r                    = VK_COMPONENT_SWIZZLE_IDENTITY;<br>    imageViewCI.components.g                    = VK_COMPONENT_SWIZZLE_IDENTITY;<br>    imageViewCI.components.b                    = VK_COMPONENT_SWIZZLE_IDENTITY;<br>    imageViewCI.components.a                    = VK_COMPONENT_SWIZZLE_IDENTITY;<br>    imageViewCI.subresourceRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;<br>    imageViewCI.subresourceRange.baseMipLevel   = <span class="hljs-number">0</span>;<br>    imageViewCI.subresourceRange.levelCount     = <span class="hljs-number">1</span>;<br>    imageViewCI.subresourceRange.baseArrayLayer = <span class="hljs-number">0</span>;<br>    imageViewCI.subresourceRange.layerCount     = <span class="hljs-number">1</span>;<br>    <span class="hljs-built_in">vkrVulkanAssert</span>(<span class="hljs-built_in">vkCreateImageView</span>(m_context-&gt;<span class="hljs-built_in">GetDevice</span>(), &amp;imageViewCI, <span class="hljs-literal">nullptr</span>, &amp;m_imageViews[i]),<br>        <span class="hljs-string">&quot;Failed to create image view&quot;</span>);<br>&#125;<br></code></pre></td></tr></table></figure>
+<h3 id="1-5-创建Pipeline和动态渲染"><a href="#1-5-创建Pipeline和动态渲染" class="headerlink" title="1.5 创建Pipeline和动态渲染"></a>1.5 创建Pipeline和动态渲染</h3><p>一个Graphics Pipeline包括了下面几个组成成分：</p>
+<ul>
+<li>VkPipelineInputAssemblyStateCreateInfo: 输入装配状态，三角形&#x2F;点或者线</li>
+<li>VkPipelineViewportStateCreateInfo：视口&#x2F;Scissor状态，视口&#x2F;Scissor的大小和数量</li>
+<li>VkPipelineMultisampleStateCreateInfo：多重采样状态，MSAA的级别</li>
+<li>VkPipelineRasterizationStateCreateInfo：光栅化状态，线宽，剔除状态，Polygon模式</li>
+<li>VkPipelineColorBlendStateCreateInfo：颜色混合状态，颜色混合的方式</li>
+<li>VkPipelineDepthStencilStateCreateInfo：深度模板状态，深度测试，模板测试</li>
+<li>VkPipelineLayoutCreateInfo：管线布局，描述符集布局和Push Constant的布局</li>
+</ul>
+<blockquote>
+<p>当然，指定为Dynamic State后可以随意填写。</p>
+</blockquote>
+<p>对于动态渲染，我们填VkPipelineRenderingCreateInfo，其中描述好这个Graphics Pipeline的渲染目标（格式）、深度和模板格式的信息，然后将信息写入当前PipelineCI的<code>pNext</code>指针中。这种情况下我们PipelineCI的<code>renderPass</code>和<code>subpass</code>都设置为VK_NULL_HANDLE和0。我们在创建Pipeline时，使用<code>vkCreateGraphicsPipelines</code>函数创建Pipeline。</p>
+<p>Pipeline的创建会编译Shader，因此有性能代价，为此Vulkan引入了Pipeline Cache来复用那些已经被创建的Pipelines。</p>
+<blockquote>
+<p>实现上，Ifrit-v2为每一个Pipeline都计算了一个Hash值（冲突fallback到比较），因此看起来不会有新建Pipeline的开销。虽然项目也加了Vulkan自己的Pipeline Cache.</p>
+</blockquote>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><code class="hljs cpp"><span class="hljs-built_in">vkrVulkanAssert</span>(<span class="hljs-built_in">vkCreatePipelineCache</span>(device, &amp;cacheCI, <span class="hljs-literal">nullptr</span>, &amp;cache), <span class="hljs-string">&quot;Failed to create pipeline cache&quot;</span>);<br><span class="hljs-keyword">auto</span> res = <span class="hljs-built_in">vkCreateGraphicsPipelines</span>(device, cache, <span class="hljs-number">1</span>, &amp;pipelineCI, <span class="hljs-literal">nullptr</span>, &amp;m_pipeline);<br><span class="hljs-built_in">vkrVulkanAssert</span>(res, <span class="hljs-string">&quot;Failed to create graphics pipeline&quot;</span>);<br><br><span class="hljs-keyword">if</span> (!cacheExists)<br>&#123;<br>    <span class="hljs-type">size_t</span> cacheSize = <span class="hljs-number">0</span>;<br>    <span class="hljs-built_in">vkrVulkanAssert</span>(<br>        <span class="hljs-built_in">vkGetPipelineCacheData</span>(device, cache, &amp;cacheSize, <span class="hljs-literal">nullptr</span>), <span class="hljs-string">&quot;Failed to get pipeline cache data size&quot;</span>);<br>    cacheData.<span class="hljs-built_in">resize</span>(cacheSize);<br>    <span class="hljs-built_in">vkrVulkanAssert</span>(<span class="hljs-built_in">vkGetPipelineCacheData</span>(device, cache, &amp;cacheSize, cacheData.<span class="hljs-built_in">data</span>()),<br>        <span class="hljs-string">&quot;Failed to get pipeline cache data&quot;</span>);<br><br>    <span class="hljs-function">std::ofstream <span class="hljs-title">cacheFile</span><span class="hljs-params">(cachePath, std::ios::binary)</span></span>;<br>    cacheFile.<span class="hljs-built_in">write</span>(<span class="hljs-built_in">reinterpret_cast</span>&lt;<span class="hljs-type">const</span> <span class="hljs-type">char</span>*&gt;(cacheData.<span class="hljs-built_in">data</span>()), cacheSize);<br>    cacheFile.<span class="hljs-built_in">close</span>();<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h4 id="1-5-1-虽然没使用的RenderPass和SubPass"><a href="#1-5-1-虽然没使用的RenderPass和SubPass" class="headerlink" title="1.5.1 虽然没使用的RenderPass和SubPass"></a>1.5.1 虽然没使用的RenderPass和SubPass</h4><p>传统的RenderPass流程实际上做了隐式的Layout转换,而新的动态渲染流程则不需要了,所有都得自己写。与此同时,动态渲染的引入也废弃了VkFrameBuffer这一个概念，但是Dynamic Rendering仍然有自己的缺陷。</p>
+<blockquote>
+<p>VK_KHR_dynamic_rendering显然带来了更好的开发体验和易用性，那么代价是什么？显然这带来了运行时的校验开销。这包括检 RenderPass参数有效性、Pipeline 与 RenderPass 的隐式关联的有效性等，这些校验必然需要一定的额外开销。使用Dynamic Rendering需要在易用性和性能之间进行权衡。[1]</p>
+</blockquote>
+<p>RenderPass 可以看作是一次渲染的抽象描述，包含了渲染的目标、格式、Attachment等信息。每一个RenderPass包含了多个子步骤，每一个子步骤称为Subpass。Subpass可以看作是RenderPass的一个阶段，每一个Subpass可以有自己的输入和输出Attachment。</p>
+<p>SubPass在TBDR上还是有优点的：</p>
+<blockquote>
+<p>Subpasses are subsequent rendering operations that depend on the contents of framebuffers in previous passes, for example a sequence of post-processing effects that are applied one after another. If you group these rendering operations into one render pass, then Vulkan is able to reorder the operations and conserve memory bandwidth for possibly better performance. [2]</p>
+</blockquote>
+<blockquote>
+<p>Tile-based renderers, for example, can take advantage of tile memory, which being on chip is decisively faster than external memory, potentially saving a considerable amount of bandwidth. [3]</p>
+</blockquote>
+<h3 id="1-6-创建Command-Buffer"><a href="#1-6-创建Command-Buffer" class="headerlink" title="1.6 创建Command Buffer"></a>1.6 创建Command Buffer</h3><p>Command Buffer是Vulkan中用于记录命令的对象。我们可以通过<code>vkAllocateCommandBuffers</code>函数创建Command Buffer。我们需要填上Command Buffer的创建信息，包括Command Buffer的类型、池等信息。我们可以通过<code>vkCreateCommandPool</code>函数创建Command Pool。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><code class="hljs cpp">VkCommandPoolCreateInfo poolCI&#123;&#125;;<br>poolCI.sType            = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;<br>poolCI.queueFamilyIndex = m_queueFamily;<br>poolCI.flags            = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;<br><span class="hljs-built_in">vkrVulkanAssert</span>(<span class="hljs-built_in">vkCreateCommandPool</span>(m_context-&gt;<span class="hljs-built_in">GetDevice</span>(), &amp;poolCI, <span class="hljs-literal">nullptr</span>, &amp;m_commandPool),<br>    <span class="hljs-string">&quot;Failed to create command pool&quot;</span>);<br></code></pre></td></tr></table></figure>
+
+<p>当然我们可以每一帧都<code>vkAllocateCommandBuffers</code>，或者复用第K帧前的Command Buffer（只要不在GPU端使用即可）。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><code class="hljs cpp"><span class="hljs-keyword">if</span> (m_AvailableCommandBuffers.<span class="hljs-built_in">empty</span>())<br>&#123;<br>    VkCommandBufferAllocateInfo bufferAI&#123;&#125;;<br>    bufferAI.sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;<br>    bufferAI.commandPool        = m_commandPool;<br>    bufferAI.level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY;<br>    bufferAI.commandBufferCount = <span class="hljs-number">1</span>;<br><br>    VkCommandBuffer buffer;<br>    <span class="hljs-built_in">vkrVulkanAssert</span>(<span class="hljs-built_in">vkAllocateCommandBuffers</span>(m_context-&gt;<span class="hljs-built_in">GetDevice</span>(), &amp;bufferAI, &amp;buffer),<br>        <span class="hljs-string">&quot;Failed to allocate command buffer&quot;</span>);<br><br>    <span class="hljs-keyword">return</span> std::<span class="hljs-built_in">make_unique</span>&lt;CommandBuffer&gt;(m_context, buffer, m_queueFamily);<br>&#125;<br><span class="hljs-keyword">else</span><br>&#123;<br>    <span class="hljs-keyword">auto</span> cmdBuf = std::<span class="hljs-built_in">move</span>(m_AvailableCommandBuffers.<span class="hljs-built_in">back</span>());<br>    m_AvailableCommandBuffers.<span class="hljs-built_in">pop_back</span>();<br>    <span class="hljs-keyword">return</span> cmdBuf;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>Command Buffer的执行由<code>vkQueueSubmit</code>函数提交到队列。我们需要填上Command Buffer的提交信息，包括Command Buffer的数量、信号量等信息。我们可以通过<code>vkQueuePresentKHR</code>函数将图像交换到屏幕上。这里同步使用了Timeline Semaphore来进行（两个优势：具备Fence和Semaphore的特性，且在多个队列同步上不会出现组合数级别的Semaphore）。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><code class="hljs cpp"> VkSubmitInfo submitInfo&#123;&#125;;<br>submitInfo.sType                = VK_STRUCTURE_TYPE_SUBMIT_INFO;<br>submitInfo.waitSemaphoreCount   = <span class="hljs-built_in">SizeCast</span>&lt;<span class="hljs-type">int</span>&gt;(waitSemaphoreHandles.<span class="hljs-built_in">size</span>());<br>submitInfo.pWaitSemaphores      = waitSemaphoreHandles.<span class="hljs-built_in">data</span>();<br>submitInfo.pWaitDstStageMask    = waitStages.<span class="hljs-built_in">data</span>();<br>submitInfo.commandBufferCount   = <span class="hljs-number">1</span>;<br>submitInfo.pCommandBuffers      = &amp;commandBuffer;<br>submitInfo.signalSemaphoreCount = <span class="hljs-built_in">SizeCast</span>&lt;<span class="hljs-type">int</span>&gt;(signalSemaphores.<span class="hljs-built_in">size</span>());<br>submitInfo.pSignalSemaphores    = signalSemaphores.<span class="hljs-built_in">data</span>();<br><br>VkTimelineSemaphoreSubmitInfo timelineInfo&#123;&#125;;<br>timelineInfo.sType                     = VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO;<br>timelineInfo.waitSemaphoreValueCount   = <span class="hljs-built_in">SizeCast</span>&lt;<span class="hljs-type">int</span>&gt;(waitValues.<span class="hljs-built_in">size</span>());<br>timelineInfo.pWaitSemaphoreValues      = waitValues.<span class="hljs-built_in">data</span>();<br>timelineInfo.signalSemaphoreValueCount = <span class="hljs-built_in">SizeCast</span>&lt;<span class="hljs-type">int</span>&gt;(signalValues.<span class="hljs-built_in">size</span>());<br>timelineInfo.pSignalSemaphoreValues    = signalValues.<span class="hljs-built_in">data</span>();<br><br>submitInfo.pNext = &amp;timelineInfo;<br>VkFence vfence   = VK_NULL_HANDLE;<br><span class="hljs-keyword">if</span> (fence)<br>&#123;<br>    vfence = fence;<br>&#125;<br><span class="hljs-built_in">vkrVulkanAssert</span>(<span class="hljs-built_in">vkQueueSubmit</span>(m_queue, <span class="hljs-number">1</span>, &amp;submitInfo, vfence), <span class="hljs-string">&quot;Failed to submit command buffer&quot;</span>);<br></code></pre></td></tr></table></figure>
+
+<h3 id="1-7-动态渲染的命令缓冲"><a href="#1-7-动态渲染的命令缓冲" class="headerlink" title="1.7 动态渲染的命令缓冲"></a>1.7 动态渲染的命令缓冲</h3><p>虽然没了VkFrameBuffer，但是我们还需要在开始Dynamic Rendering前先给我们的Attachment设定是要先Clear还是Load。以及Rendering的范围是多大。填完后开始Dynamic Rendering。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><code class="hljs cpp"><span class="hljs-keyword">for</span> (<span class="hljs-keyword">auto</span> attachment : m_colorAttachments)<br>&#123;<br>    VkClearValue clearValue;<br>    clearValue.color.float32[<span class="hljs-number">0</span>] = attachment-&gt;<span class="hljs-built_in">GetClearValue</span>().m_color[<span class="hljs-number">0</span>];<br>    clearValue.color.float32[<span class="hljs-number">1</span>] = attachment-&gt;<span class="hljs-built_in">GetClearValue</span>().m_color[<span class="hljs-number">1</span>];<br>    clearValue.color.float32[<span class="hljs-number">2</span>] = attachment-&gt;<span class="hljs-built_in">GetClearValue</span>().m_color[<span class="hljs-number">2</span>];<br>    clearValue.color.float32[<span class="hljs-number">3</span>] = attachment-&gt;<span class="hljs-built_in">GetClearValue</span>().m_color[<span class="hljs-number">3</span>];<br><br>    ...<br><br>    VkRenderingAttachmentInfoKHR attachmentInfo&#123;&#125;;<br>    attachmentInfo.sType      = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR;<br>    attachmentInfo.clearValue = clearValue;<br>    attachmentInfo.loadOp     = loadOp;<br>    <br>    ...<br><br>    colorAttachmentInfos.<span class="hljs-built_in">push_back</span>(attachmentInfo);<br>&#125;<br>VkRect2D renderArea;<br>renderArea.extent = &#123; m_renderArea.width, m_renderArea.height &#125;;<br>renderArea.offset = &#123; m_renderArea.x, m_renderArea.y &#125;;<br><br>VkRenderingInfo renderingInfo&#123;&#125;;<br>renderingInfo.sType                = VK_STRUCTURE_TYPE_RENDERING_INFO;<br>renderingInfo.renderArea           = renderArea;<br>renderingInfo.layerCount           = <span class="hljs-number">1</span>;<br>renderingInfo.colorAttachmentCount = <span class="hljs-built_in">SizeCast</span>&lt;<span class="hljs-type">uint32_t</span>&gt;(m_colorAttachments.<span class="hljs-built_in">size</span>());<br>renderingInfo.pColorAttachments    = colorAttachmentInfos.<span class="hljs-built_in">data</span>();<br>renderingInfo.pDepthAttachment     = m_depthStencilAttachment ? &amp;depthAttachmentInfo : <span class="hljs-literal">nullptr</span>;<br><br><span class="hljs-built_in">vkCmdBeginRendering</span>(cmdraw, &amp;renderingInfo);<br></code></pre></td></tr></table></figure>
+
+<p>当然，还需要将上一步的Pipeline和Descriptor Set绑定到Command Buffer上。我们可以通过<code>vkCmdBindPipeline</code>函数绑定Pipeline，通过<code>vkCmdBindDescriptorSets</code>函数绑定Descriptor Set。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><code class="hljs cpp"><span class="hljs-built_in">vkCmdBindPipeline</span>(<br>            m_commandBuffer-&gt;<span class="hljs-built_in">GetCommandBuffer</span>(), VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline-&gt;<span class="hljs-built_in">GetPipeline</span>());<br>...<br><span class="hljs-keyword">auto</span> bindlessSet = m_descriptorManager-&gt;<span class="hljs-built_in">GetBindlessSet</span>();<br><span class="hljs-built_in">vkCmdBindDescriptorSets</span>(<br>            cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline-&gt;<span class="hljs-built_in">GetLayout</span>(), <span class="hljs-number">0</span>, <span class="hljs-number">1</span>, &amp;bindlessSet, <span class="hljs-number">0</span>, <span class="hljs-literal">nullptr</span>);<br></code></pre></td></tr></table></figure>
+
+<p>如果设定了Dynamic State，则这时候需要指定这些State的值，例如</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><code class="hljs cpp">exfun.<span class="hljs-built_in">p_vkCmdSetLogicOpEnableEXT</span>(cmd, m_logicalOpEnable);<br>exfun.<span class="hljs-built_in">p_vkCmdSetLogicOpEXT</span>(cmd, m_logicOp);<br>exfun.<span class="hljs-built_in">p_vkCmdSetStencilTestEnable</span>(cmd, m_stencilEnable);<br>exfun.<span class="hljs-built_in">p_vkCmdSetStencilOp</span>(cmd, m_stencilOp.faceMask, m_stencilOp.failOp, m_stencilOp.passOp,<br>    m_stencilOp.depthFailOp, m_stencilOp.compareOp);<br></code></pre></td></tr></table></figure>
+
+<p>至于要如何绘制，由于方法多样（如Multi Indirect Draw），这里封装的Graphics Pass就不对此抽象。用户侧声明最终绘制方式。至于State，则交由上层RDG管理（在<code>ifrit.runtime.dll</code>中），Vulkan对RHI的实现这里仅做State的Tracking。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><code class="hljs cpp"><span class="hljs-keyword">if</span> (m_recordFunction)<br>&#123;<br>    <span class="hljs-built_in">m_recordFunction</span>(&amp;m_passContext);<br>&#125;<br><br>renderTarget-&gt;<span class="hljs-built_in">EndRendering</span>(m_commandBuffer);<br></code></pre></td></tr></table></figure>
+
+<h3 id="1-8-在屏幕上显示第一个三角形"><a href="#1-8-在屏幕上显示第一个三角形" class="headerlink" title="1.8 在屏幕上显示第一个三角形?"></a>1.8 在屏幕上显示第一个三角形?</h3><p>最后，我们需要将图像交换到屏幕上。我们可以通过<code>vkQueuePresentKHR</code>函数将图像交换到屏幕上。我们需要填上交换的信息，包括交换链、图像索引等信息。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><code class="hljs cpp"><br>VkPresentInfoKHR presentInfo&#123;&#125;;<br>presentInfo.sType              = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;<br>presentInfo.waitSemaphoreCount = <span class="hljs-number">1</span>;<br>presentInfo.pWaitSemaphores    = &amp;m_renderingFinishSemaphores[m_currentFrame];<br>presentInfo.swapchainCount     = <span class="hljs-number">1</span>;<br>presentInfo.pSwapchains        = &amp;m_swapchain;<br>presentInfo.pImageIndices      = &amp;m_imageIndex;<br><br><span class="hljs-built_in">vkQueuePresentKHR</span>(m_presentQueue, &amp;presentInfo);<br>m_currentFrame = (m_currentFrame + <span class="hljs-number">1</span>) % m_backbufferCount;<br></code></pre></td></tr></table></figure>
+
+<p>当然还要决定当前帧的图像要画到哪里，所以在帧开始前我们需要获取当前帧的图像索引。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><code class="hljs cpp"><span class="hljs-built_in">vkWaitForFences</span>(m_context-&gt;<span class="hljs-built_in">GetDevice</span>(), <span class="hljs-number">1</span>, &amp;m_inFlightFences[m_currentFrame], VK_TRUE, UINT64_MAX);<br><span class="hljs-built_in">vkResetFences</span>(m_context-&gt;<span class="hljs-built_in">GetDevice</span>(), <span class="hljs-number">1</span>, &amp;m_inFlightFences[m_currentFrame]);<br>u32 imageIndex;<br><span class="hljs-built_in">vkAcquireNextImageKHR</span>(m_context-&gt;<span class="hljs-built_in">GetDevice</span>(), m_swapchain, UINT64_MAX,<br>    m_imageAvailableSemaphores[m_currentFrame], VK_NULL_HANDLE, &amp;imageIndex);<br>m_imageIndex = imageIndex;<br><span class="hljs-keyword">return</span> imageIndex;<br></code></pre></td></tr></table></figure>
+<p>至此，就可以在屏幕上显示第一个三角形了（对于Buffer的处理后续再说）。</p>
+<h2 id="2-Resources和Descriptors"><a href="#2-Resources和Descriptors" class="headerlink" title="2. Resources和Descriptors"></a>2. Resources和Descriptors</h2><p>TODO </p>
+<h2 id="额外参考文献"><a href="#额外参考文献" class="headerlink" title="额外参考文献"></a>额外参考文献</h2><ul>
+<li>[1] zhuanlan.zhihu.com&#x2F;p&#x2F;555509777</li>
+<li>[2] <a target="_blank" rel="noopener" href="http://vulkan-tutorial.com/Drawing_a_triangle/Graphics_pipeline_basics/Render_passes">http://vulkan-tutorial.com/Drawing_a_triangle/Graphics_pipeline_basics/Render_passes</a></li>
+<li>[3] <a target="_blank" rel="noopener" href="http://docs.vulkan.org/samples/latest/samples/performance/subpasses/README.html">http://docs.vulkan.org/samples/latest/samples/performance/subpasses/README.html</a></li>
+</ul>
+
+                
+              </div>
+            
+            <hr/>
+            <div>
+              <div class="post-metas my-3">
+  
+  
+    <div class="post-meta">
+      <i class="iconfont icon-tags"></i>
+      
+        <a href="/Ibuki/tags/L-C/" class="print-no-link">#L:C++</a>
+      
+        <a href="/Ibuki/tags/P-Ifrit-v2/" class="print-no-link">#P:Ifrit-v2</a>
+      
+        <a href="/Ibuki/tags/T-%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/" class="print-no-link">#T:操作系统</a>
+      
+        <a href="/Ibuki/tags/L-Vulkan/" class="print-no-link">#L:Vulkan</a>
+      
+    </div>
+  
+</div>
+
+
+              
+  
+
+  <div class="license-box my-3">
+    <div class="license-title">
+      <div>Ifrit-v2 过程记录 3: Vulkan绘制流程</div>
+      <div>http://example.com/2025/04/23/ifrit-report-3/</div>
+    </div>
+    <div class="license-meta">
+      
+        <div class="license-meta-item">
+          <div>Author</div>
+          <div>funkybirds(Aeroraven)</div>
+        </div>
+      
+      
+        <div class="license-meta-item license-meta-date">
+          <div>Posted on</div>
+          <div>April 23, 2025</div>
+        </div>
+      
+      
+      
+        <div class="license-meta-item">
+          <div>Licensed under</div>
+          <div>
+            
+              
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="BY - Attribution">
+                    <i class="iconfont icon-cc-by"></i>
+                  </span>
+                </a>
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="NC - Non-commercial">
+                    <i class="iconfont icon-cc-nc"></i>
+                  </span>
+                </a>
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="SA - Share-alike">
+                    <i class="iconfont icon-cc-sa"></i>
+                  </span>
+                </a>
+              
+            
+          </div>
+        </div>
+      
+    </div>
+    <div class="license-icon iconfont"></div>
+  </div>
+
+
+
+              
+                <div class="post-prevnext my-3">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/Ibuki/2025/04/23/ifrit-report-5/" title="Ifrit-v2 过程记录 5: 虚拟几何体和GPU-Driven管线">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">Ifrit-v2 过程记录 5: 虚拟几何体和GPU-Driven管线</span>
+                        <span class="visible-mobile">Previous</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/Ibuki/2025/04/23/ifrit-report-2/" title="Ifrit-v2 过程记录 2: SIMD和CPU多线程">
+                        <span class="hidden-mobile">Ifrit-v2 过程记录 2: SIMD和CPU多线程</span>
+                        <span class="visible-mobile">Next</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar" style="margin-left: -1rem">
+    <div id="toc">
+  <p class="toc-header">
+    <i class="iconfont icon-list"></i>
+    <span>Table of Contents</span>
+  </p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+
+
+  </aside>
+
+
+    </div>
+  </div>
+</div>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+  
+  
+
+
+
+
+
+
+
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">Search</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v" for="local-search-input">Keyword</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    
+
+    
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+  
+    <div class="footer-content">
+       <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+    </div>
+  
+  
+  
+</div>
+
+  </footer>
+
+  <!-- Scripts -->
+  
+  <script  src="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://lib.baomitu.com/jquery/3.6.4/jquery.min.js" ></script>
+<script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
+<script  src="/Ibuki/js/events.js" ></script>
+<script  src="/Ibuki/js/plugins.js" ></script>
+
+
+  <script  src="https://lib.baomitu.com/typed.js/2.0.12/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var subtitle = document.getElementById('subtitle');
+      if (!subtitle || !typing) {
+        return;
+      }
+      var text = subtitle.getAttribute('data-typed-text');
+      
+        typing(text);
+      
+    })(window, document);
+  </script>
+
+
+
+
+  
+    <script  src="/Ibuki/js/img-lazyload.js" ></script>
+  
+
+
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/tocbot/4.20.1/tocbot.min.js', function() {
+    var toc = jQuery('#toc');
+    if (toc.length === 0 || !window.tocbot) { return; }
+    var boardCtn = jQuery('#board-ctn');
+    var boardTop = boardCtn.offset().top;
+
+    window.tocbot.init(Object.assign({
+      tocSelector     : '#toc-body',
+      contentSelector : '.markdown-body',
+      linkClass       : 'tocbot-link',
+      activeLinkClass : 'tocbot-active-link',
+      listClass       : 'tocbot-list',
+      isCollapsedClass: 'tocbot-is-collapsed',
+      collapsibleClass: 'tocbot-is-collapsible',
+      scrollSmooth    : true,
+      includeTitleTags: true,
+      headingsOffset  : -boardTop,
+    }, CONFIG.toc));
+    if (toc.find('.toc-list-item').length > 0) {
+      toc.css('visibility', 'visible');
+    }
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('tocbot' in window) {
+        tocbot.refresh();
+        var toc = jQuery('#toc');
+        if (toc.length === 0 || !tocbot) {
+          return;
+        }
+        if (toc.find('.toc-list-item').length > 0) {
+          toc.css('visibility', 'visible');
+        }
+      }
+    });
+  });
+</script>
+
+
+  <script src=https://lib.baomitu.com/clipboard.js/2.0.11/clipboard.min.js></script>
+
+  <script>Fluid.plugins.codeWidget();</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/anchor-js/5.0.0/anchor.min.js', function() {
+    window.anchors.options = {
+      placement: CONFIG.anchorjs.placement,
+      visible  : CONFIG.anchorjs.visible
+    };
+    if (CONFIG.anchorjs.icon) {
+      window.anchors.options.icon = CONFIG.anchorjs.icon;
+    }
+    var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+    var res = [];
+    for (var item of el) {
+      res.push('.markdown-body > ' + item.trim());
+    }
+    if (CONFIG.anchorjs.placement === 'left') {
+      window.anchors.options.class = 'anchorjs-link-left';
+    }
+    window.anchors.add(res.join(', '));
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('anchors' in window) {
+        anchors.removeAll();
+        var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+        var res = [];
+        for (var item of el) {
+          res.push('.markdown-body > ' + item.trim());
+        }
+        if (CONFIG.anchorjs.placement === 'left') {
+          anchors.options.class = 'anchorjs-link-left';
+        }
+        anchors.add(res.join(', '));
+      }
+    });
+  });
+</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.js', function() {
+    Fluid.plugins.fancyBox();
+  });
+</script>
+
+
+  <script>Fluid.plugins.imageCaption();</script>
+
+  
+      <script>
+        if (!window.MathJax) {
+          window.MathJax = {
+            tex    : {
+              inlineMath: { '[+]': [['$', '$']] }
+            },
+            loader : {
+              load: ['ui/lazy']
+            },
+            options: {
+              renderActions: {
+                insertedScript: [200, () => {
+                  document.querySelectorAll('mjx-container').forEach(node => {
+                    let target = node.parentNode;
+                    if (target.nodeName.toLowerCase() === 'li') {
+                      target.parentNode.classList.add('has-jax');
+                    }
+                  });
+                }, '', false]
+              }
+            }
+          };
+        } else {
+          MathJax.startup.document.state(0);
+          MathJax.texReset();
+          MathJax.typeset();
+          MathJax.typesetPromise();
+        }
+
+        Fluid.events.registerRefreshCallback(function() {
+          if ('MathJax' in window && MathJax.startup.document && typeof MathJax.startup.document.state === 'function') {
+            MathJax.startup.document.state(0);
+            MathJax.texReset();
+            MathJax.typeset();
+            MathJax.typesetPromise();
+          }
+        });
+      </script>
+    
+
+  <script  src="https://lib.baomitu.com/mathjax/3.2.2/es5/tex-mml-chtml.js" ></script>
+
+  <script  src="/Ibuki/js/local-search.js" ></script>
+
+
+
+
+
+<!-- 主题的启动项，将它保持在最底部 -->
+<!-- the boot of the theme, keep it at the bottom -->
+<script  src="/Ibuki/js/boot.js" ></script>
+
+
+  
+
+  <noscript>
+    <div class="noscript-warning">Blog works best with JavaScript enabled</div>
+  </noscript>
+</body>
+</html>

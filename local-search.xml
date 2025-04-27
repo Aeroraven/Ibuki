@@ -4,69 +4,13 @@
   
   
   <entry>
-    <title>Ifrit-v2 过程记录 9: 体积光照</title>
-    <link href="/Ibuki/2025/04/23/ifrit-report-9/"/>
-    <url>/Ibuki/2025/04/23/ifrit-report-9/</url>
+    <title>一些杂项记录</title>
+    <link href="/Ibuki/2025/04/25/miscellaneous-questions/"/>
+    <url>/Ibuki/2025/04/25/miscellaneous-questions/</url>
     
-    <content type="html"><![CDATA[<h1 id="Ifrit-v2-过程记录-9-体积光照"><a href="#Ifrit-v2-过程记录-9-体积光照" class="headerlink" title="Ifrit-v2 过程记录 9: 体积光照"></a>Ifrit-v2 过程记录 9: 体积光照</h1><p>TODO</p>]]></content>
-    
-    
-    
-    <tags>
-      
-      <tag>T:图形学</tag>
-      
-      <tag>L:C++</tag>
-      
-      <tag>P:Ifrit-v2</tag>
-      
-    </tags>
-    
-  </entry>
-  
-  
-  
-  <entry>
-    <title>Ifrit-v2 过程记录 8: 抗锯齿</title>
-    <link href="/Ibuki/2025/04/23/ifrit-report-8/"/>
-    <url>/Ibuki/2025/04/23/ifrit-report-8/</url>
-    
-    <content type="html"><![CDATA[<h1 id="Ifrit-v2-过程记录-8-抗锯齿"><a href="#Ifrit-v2-过程记录-8-抗锯齿" class="headerlink" title="Ifrit-v2 过程记录 8: 抗锯齿"></a>Ifrit-v2 过程记录 8: 抗锯齿</h1><p>TODO</p>]]></content>
+    <content type="html"><![CDATA[]]></content>
     
     
-    
-    <tags>
-      
-      <tag>T:图形学</tag>
-      
-      <tag>L:C++</tag>
-      
-      <tag>P:Ifrit-v2</tag>
-      
-    </tags>
-    
-  </entry>
-  
-  
-  
-  <entry>
-    <title>Ifrit-v2 过程记录 7: 泛光</title>
-    <link href="/Ibuki/2025/04/23/ifrit-report-7/"/>
-    <url>/Ibuki/2025/04/23/ifrit-report-7/</url>
-    
-    <content type="html"><![CDATA[<h1 id="Ifrit-v2-过程记录-7-泛光"><a href="#Ifrit-v2-过程记录-7-泛光" class="headerlink" title="Ifrit-v2 过程记录 7: 泛光"></a>Ifrit-v2 过程记录 7: 泛光</h1><p>TODO</p>]]></content>
-    
-    
-    
-    <tags>
-      
-      <tag>T:图形学</tag>
-      
-      <tag>L:C++</tag>
-      
-      <tag>P:Ifrit-v2</tag>
-      
-    </tags>
     
   </entry>
   
@@ -127,7 +71,7 @@
     <link href="/Ibuki/2025/04/23/ifrit-report-5/"/>
     <url>/Ibuki/2025/04/23/ifrit-report-5/</url>
     
-    <content type="html"><![CDATA[<h1 id="Ifrit-v2-过程记录-5-虚拟几何体和GPU-Driven管线"><a href="#Ifrit-v2-过程记录-5-虚拟几何体和GPU-Driven管线" class="headerlink" title="Ifrit-v2 过程记录 5: 虚拟几何体和GPU-Driven管线"></a>Ifrit-v2 过程记录 5: 虚拟几何体和GPU-Driven管线</h1><p>TODO</p>]]></content>
+    <content type="html"><![CDATA[<h1 id="Ifrit-v2-过程记录-5-虚拟几何体和GPU-Driven管线"><a href="#Ifrit-v2-过程记录-5-虚拟几何体和GPU-Driven管线" class="headerlink" title="Ifrit-v2 过程记录 5: 虚拟几何体和GPU-Driven管线"></a>Ifrit-v2 过程记录 5: 虚拟几何体和GPU-Driven管线</h1><h2 id="1-Virtual-Geometry"><a href="#1-Virtual-Geometry" class="headerlink" title="1. Virtual Geometry"></a>1. Virtual Geometry</h2><h3 id="1-1-Meshlet-生成"><a href="#1-1-Meshlet-生成" class="headerlink" title="1.1 Meshlet 生成"></a>1.1 Meshlet 生成</h3><p>这里造了一个轮子，首先先生成一系列Cluster的初始Proposal。然后规则扩展这些Cluster，把三角形加到Cluster里（这里参考meshoptimizer，两个标准：Centroid中心的距离，和Cluster邻接的顶点数量）。这部分实现在软光栅的实现中 <code>softgraphics/src/engine/meshletbuilder/MeshletBuilder.cpp</code></p><blockquote><p>Runtime为了效率，直接使用meshoptimizer了，上面代码只用于造轮子</p></blockquote><h3 id="1-2-Cluster-简化"><a href="#1-2-Cluster-简化" class="headerlink" title="1.2 Cluster 简化"></a>1.2 Cluster 简化</h3><p>建立完了Cluster后，我们需要对这些Cluster建立DAG。为每一个Cluster维护一个边集（哈希表），然后对共边的Cluster图上连边完成建图。之后我们调用METIS，进行图分割，期望将Cluster的数量降低到一定值（目前是25%一次迭代）。</p><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs cpp"><span class="hljs-keyword">auto</span> result = <span class="hljs-built_in">METIS_PartGraphKway</span>(&amp;nvtxs, &amp;ncon, xadjPtr, adjncyPtr, vwgt, vsize, adjwgt, &amp;nparts, tpwgts,<br>    ubvec, options, &amp;edgeCut, ctx.graphPartition.<span class="hljs-built_in">data</span>());<br></code></pre></td></tr></table></figure><p>对于同一个Cluster Group下的所有Cluster，我们Lock Border进行Mesh简化。简化得到的误差写入当前Cluster Group的误差项。然后在这个Cluster Group中切分Meshlet，得到下一个LOD，当前Cluster Group的误差项写入上一级Cluster的Self误差项。</p><blockquote><p>这里可以对顶点切线和法线进行加权，来避免LOD切换时的顶点属性突变的问题。具体可以参见TODO.md中的修复前后的效果。</p></blockquote><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><code class="hljs cpp">simplifiedSize =<br>    <span class="hljs-built_in">meshopt_simplifyWithAttributes</span>(simplifiedIndexBuffer.<span class="hljs-built_in">data</span>(), aggregatedIndexBuffer.<span class="hljs-built_in">data</span>(),<br>        aggregatedIndexBuffer.<span class="hljs-built_in">size</span>(), <span class="hljs-built_in">reinterpret_cast</span>&lt;f32*&gt;(mesh.vertexData + mesh.positionOffset),<br>        mesh.vertexCount, mesh.vertexStride, <span class="hljs-built_in">reinterpret_cast</span>&lt;f32*&gt;(mesh.normalData), <span class="hljs-number">3</span> * <span class="hljs-built_in">sizeof</span>(f32),<br>        normalWeight, <span class="hljs-number">3</span>, <span class="hljs-literal">nullptr</span>, targetIndexCount, targetError, option, &amp;simplifyError);<br>...<br><span class="hljs-keyword">auto</span>                 maxMeshlets =<br>    <span class="hljs-built_in">meshopt_buildMeshletsBound</span>(simplifiedIndexBuffer.<span class="hljs-built_in">size</span>(), VERTICES_PER_MESHLET, TRIANGLES_PER_MESHLET);<br>meshlets.<span class="hljs-built_in">resize</span>(maxMeshlets);<br>meshletVertices.<span class="hljs-built_in">resize</span>(maxMeshlets * VERTICES_PER_MESHLET);<br>meshletTriangles.<span class="hljs-built_in">resize</span>(maxMeshlets * TRIANGLES_PER_MESHLET * <span class="hljs-number">3</span>);<br><span class="hljs-keyword">auto</span> meshletCount = <span class="hljs-built_in">meshopt_buildMeshlets</span>(meshlets.<span class="hljs-built_in">data</span>(), meshletVertices.<span class="hljs-built_in">data</span>(), meshletTriangles.<span class="hljs-built_in">data</span>(),<br>    simplifiedIndexBuffer.<span class="hljs-built_in">data</span>(), simplifiedIndexBuffer.<span class="hljs-built_in">size</span>(),<br>    <span class="hljs-built_in">reinterpret_cast</span>&lt;f32*&gt;(mesh.vertexData + mesh.positionOffset), mesh.vertexCount, mesh.vertexStride,<br>    VERTICES_PER_MESHLET, TRIANGLES_PER_MESHLET, <span class="hljs-number">0.0f</span>);<br></code></pre></td></tr></table></figure><p>当Meshlet的数量小于一定值时，我们就停止简化。至此整个LOD级别建立完成。</p><h3 id="1-3-BVH-构建"><a href="#1-3-BVH-构建" class="headerlink" title="1.3 BVH 构建"></a>1.3 BVH 构建</h3><p>TODO</p><h3 id="1-4-Two-Pass-Occlusion"><a href="#1-4-Two-Pass-Occlusion" class="headerlink" title="1.4 Two-Pass Occlusion"></a>1.4 Two-Pass Occlusion</h3><blockquote><p>UE5 的 Persistent Culling 好像默认没开</p></blockquote><p>TODO</p><h3 id="1-5-Emit-GBuffer-Material-Pass-GDC24"><a href="#1-5-Emit-GBuffer-Material-Pass-GDC24" class="headerlink" title="1.5 Emit GBuffer &amp; Material Pass (GDC24)"></a>1.5 Emit GBuffer &amp; Material Pass (GDC24)</h3><p>TODO</p><h2 id="2-Single-Pass-HiZ"><a href="#2-Single-Pass-HiZ" class="headerlink" title="2. Single-Pass HiZ"></a>2. Single-Pass HiZ</h2><blockquote><p>这个我真的是LRU了 T_T</p></blockquote><p>首先D32格式的深度图没法在CS里做UAV访问，所以先一个Copy，把内容转到R32的Mip0上。</p><p>对于低Mip级别，我们一个线程组负责一个Block中的降采样，一个线程负责4个像素的降采样。通常最大线程数为1024，这样一次能处理64x64的Block的下采样。结果能将4096x4096的深度图降到64x64的Mip级别。</p><p>对于Mip0，第一个线程负责所有SubBlock中，偏移量为0的所有4个Texel的降采样（一个Block是64x64的，我们开1024个线程，刚好覆盖），第二个负责偏移量为一的所有Block的Texel降采样。以此类推。<br>对于Mip1，则为256个线程活跃，后续Mips以此类推。</p><p>至于偏移量，通过Swizzle实现。</p><blockquote><p>正确的SPD实现用了Shared Memory，目前代码里还没用 X_X. （显然这个目前实现的访存模式很糟糕）</p></blockquote><p>剩下就是和普通的HiZ一样了。然后对于高级Mip，我们获取最后一个完成的Thread Group，显然此时纹理大小正好是一个Block的大小，然后让最后一个线程组跑同样的流程。</p><figure class="highlight glsl"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><code class="hljs glsl"><span class="hljs-type">bool</span> isFirstLane = (tX == <span class="hljs-number">0</span>);<br><span class="hljs-keyword">if</span>(isFirstLane)&#123;<br>    sharedCounter = <span class="hljs-built_in">atomicAdd</span>(GetResource(bHizAtomics,uHiZData.hizAtomics).globalAtomics,<span class="hljs-number">1</span>)+<span class="hljs-number">1</span>;<br>&#125;<br><span class="hljs-built_in">barrier</span>();<br><span class="hljs-type">uint</span> totalTiles = uHiZPushConstant.width * uHiZPushConstant.height / (<span class="hljs-number">64</span>*<span class="hljs-number">64</span>);<br><span class="hljs-keyword">if</span>(sharedCounter != totalTiles)&#123;<br>    <span class="hljs-keyword">return</span>;<br>&#125;<br></code></pre></td></tr></table></figure>]]></content>
     
     
     

@@ -27,7 +27,7 @@
 <meta property="og:description" content="难的要死，一问就是觉得基础不牢，明明科班的也没好到哪去。 https:&#x2F;&#x2F;www.xiaohongshu.com&#x2F;discovery&#x2F;item&#x2F;6712467f000000002100b103?source&#x3D;webshare&amp;xsec_token&#x3D;ABlONe02IeviKhU35zJTNoLoDpNYHkLDrq9V9OyTS8fOQ&#x3D;&amp;xsec_source&#x3D;pc_share">
 <meta property="og:locale" content="en_US">
 <meta property="article:published_time" content="2025-05-18T04:35:01.485Z">
-<meta property="article:modified_time" content="2025-05-18T09:35:44.048Z">
+<meta property="article:modified_time" content="2025-05-23T11:00:57.456Z">
 <meta property="article:author" content="funkybirds(Aeroraven)">
 <meta property="article:tag" content="T:图形学">
 <meta property="article:tag" content="L:C++">
@@ -35,6 +35,7 @@
 <meta property="article:tag" content="P:实习">
 <meta property="article:tag" content="T:GPU架构">
 <meta property="article:tag" content="T:Shader编程">
+<meta property="article:tag" content="T:数学">
 <meta name="twitter:card" content="summary_large_image">
   
   
@@ -228,7 +229,7 @@
       <span class="post-meta mr-2">
         <i class="iconfont icon-chart"></i>
         
-          653 words
+          1.2k words
         
       </span>
     
@@ -239,7 +240,7 @@
         
         
         
-          6 mins
+          10 mins
         
       </span>
     
@@ -306,9 +307,26 @@
 <h3 id="1-3-类的构造和对象拷贝"><a href="#1-3-类的构造和对象拷贝" class="headerlink" title="1.3   类的构造和对象拷贝"></a>1.3   类的构造和对象拷贝</h3><p><strong>P1</strong>. 通过拷贝构造函数进行深拷贝</p>
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><code class="hljs cpp"><span class="hljs-keyword">class</span> <span class="hljs-title class_">DiamondDust</span> &#123;<br><span class="hljs-keyword">public</span>:<br>    <span class="hljs-type">int</span> length;<br>    <span class="hljs-type">int</span>* ptr;<br>    <span class="hljs-built_in">DiamondDust</span>(<span class="hljs-type">int</span> x) &#123;<br>        length = x;<br>        ptr = <span class="hljs-keyword">new</span> <span class="hljs-type">int</span>[x];<br>    &#125;<br>    <span class="hljs-built_in">DiamondDust</span>(<span class="hljs-type">const</span> DiamondDust&amp; p) &#123; <br>        length = p.length;<br>        ptr = <span class="hljs-keyword">new</span> <span class="hljs-type">int</span>[p.length];<br>        cout &lt;&lt; <span class="hljs-string">&quot;Copy Ctor&quot;</span> &lt;&lt; endl; <span class="hljs-comment">// 调用Collect时输出</span><br>    &#125;<br>    ~<span class="hljs-built_in">DiamondDust</span>() &#123;<br>        <span class="hljs-keyword">delete</span> ptr;<br>    &#125;<br>&#125;;<br><br><span class="hljs-function"><span class="hljs-type">void</span> <span class="hljs-title">Collect</span><span class="hljs-params">(DiamondDust v)</span> </span>&#123;<br>    cout &lt;&lt; <span class="hljs-string">&quot;Collect&quot;</span> &lt;&lt; endl;<br>&#125;<br><br><span class="hljs-function"><span class="hljs-type">int</span> <span class="hljs-title">main</span><span class="hljs-params">()</span> </span>&#123;<br>    <span class="hljs-function">DiamondDust <span class="hljs-title">v</span><span class="hljs-params">(<span class="hljs-number">5</span>)</span></span>;<br>    <span class="hljs-built_in">Collect</span>(v);<br>    <span class="hljs-keyword">return</span> <span class="hljs-number">0</span>;<br>&#125;<br></code></pre></td></tr></table></figure>
 
+<h3 id="1-4-final-关键字和性能优化"><a href="#1-4-final-关键字和性能优化" class="headerlink" title="1.4 final 关键字和性能优化"></a>1.4 <code>final</code> 关键字和性能优化</h3><h3 id="1-5-std-map-容器相关"><a href="#1-5-std-map-容器相关" class="headerlink" title="1.5  std::map 容器相关"></a>1.5  <code>std::map</code> 容器相关</h3><h3 id="1-6-std-vector-容器相关"><a href="#1-6-std-vector-容器相关" class="headerlink" title="1.6 std::vector  容器相关"></a>1.6 <code>std::vector</code>  容器相关</h3><h3 id="1-7-std-unorderred-map-容器相关-Hash-Map相关"><a href="#1-7-std-unorderred-map-容器相关-Hash-Map相关" class="headerlink" title="1.7 std::unorderred_map 容器相关&#x2F;Hash Map相关"></a>1.7 <code>std::unorderred_map</code> 容器相关&#x2F;Hash Map相关</h3><h3 id="1-8-内存泄漏检测"><a href="#1-8-内存泄漏检测" class="headerlink" title="1.8 内存泄漏检测"></a>1.8 内存泄漏检测</h3><h2 id="2-数学基础"><a href="#2-数学基础" class="headerlink" title="2. 数学基础"></a>2. 数学基础</h2><h3 id="2-1-圆形内的均匀分布"><a href="#2-1-圆形内的均匀分布" class="headerlink" title="2.1 圆形内的均匀分布"></a>2.1 圆形内的均匀分布</h3><p>对于圆内半径为r的单位圆环面积，采样到其上点的概率可以写为<br>$$<br>P(r)\mathrm{d}r&#x3D;\frac{2\pi r\mathrm{d}r}{\int_0^R 2\pi x\mathrm{d}x}&#x3D;\frac{2r}{R^2}\mathrm{d}r<br>$$<br> 因此在半径上的CDF写作<br>$$<br>C(r)&#x3D;\int_0^rP(r)\mathrm{d}r&#x3D;\frac{r^2}{R^2}\sim \mathrm{U}(0,1)<br>$$<br>至此半径可以通过均匀单位随机变量X采样<br>$$<br>r&#x3D;R\sqrt{X},\quad X\sim \mathrm{U}(0,1)<br>$$<br>剩下的极角显然是均匀分布的<br>$$<br>\phi\sim\mathrm{U}(0,2\pi)<br>$$</p>
+<h3 id="2-2-四元数和空间旋转"><a href="#2-2-四元数和空间旋转" class="headerlink" title="2.2 四元数和空间旋转"></a>2.2 四元数和空间旋转</h3><h3 id="2-3-O-logN-复杂度的点在凸多边形内判断"><a href="#2-3-O-logN-复杂度的点在凸多边形内判断" class="headerlink" title="2.3 O(logN)复杂度的点在凸多边形内判断"></a>2.3 O(logN)复杂度的点在凸多边形内判断</h3><h3 id="2-4-均匀采样"><a href="#2-4-均匀采样" class="headerlink" title="2.4 均匀采样"></a>2.4 均匀采样</h3><h2 id="3-CG-GPU-TA-Shader-相关"><a href="#3-CG-GPU-TA-Shader-相关" class="headerlink" title="3.CG&#x2F;GPU&#x2F;TA&#x2F;Shader 相关"></a>3.CG&#x2F;GPU&#x2F;TA&#x2F;Shader 相关</h2><h3 id="3-1-多线程RDG和Command-List"><a href="#3-1-多线程RDG和Command-List" class="headerlink" title="3.1 多线程RDG和Command List"></a>3.1 多线程RDG和Command List</h3><h3 id="3-2-投影矩阵和TAA"><a href="#3-2-投影矩阵和TAA" class="headerlink" title="3.2 投影矩阵和TAA"></a>3.2 投影矩阵和TAA</h3><h3 id="3-3-透视描边"><a href="#3-3-透视描边" class="headerlink" title="3.3 透视描边"></a>3.3 透视描边</h3><h3 id="3-4-Nanite相关"><a href="#3-4-Nanite相关" class="headerlink" title="3.4 Nanite相关"></a>3.4 Nanite相关</h3><h3 id="3-5-光栅化相关"><a href="#3-5-光栅化相关" class="headerlink" title="3.5 光栅化相关"></a>3.5 光栅化相关</h3><h3 id="3-6-Warp-Sub-Group-中线程的命令执行-HLSL-分支标签"><a href="#3-6-Warp-Sub-Group-中线程的命令执行-HLSL-分支标签" class="headerlink" title="3.6 Warp&#x2F;Sub Group 中线程的命令执行  &#x2F; HLSL 分支标签"></a>3.6 Warp&#x2F;Sub Group 中线程的命令执行  &#x2F; HLSL 分支标签</h3><blockquote>
+<p>小节参考自：<a target="_blank" rel="noopener" href="https://learn.microsoft.com/zh-cn/windows/win32/direct3dhlsl/dx-graphics-hlsl-if">https://learn.microsoft.com/zh-cn/windows/win32/direct3dhlsl/dx-graphics-hlsl-if</a></p>
+</blockquote>
+<p>对于HLSL代码</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><code class="hljs hlsl">float4 PSMain(PSInput input) : SV_TARGET<br>&#123;   <br>    [branch]<br>    if (input.color.r &lt; 0.5) &#123;<br>        return float4(1.0, 0.0, 0.0, 1.0);<br>    &#125;<br>    else &#123;<br>        return float4(0.0, 1.0, 0.0, 1.0);<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
 
+<p>使用<code>branch</code> Tag 编译出的Shader的DXIL格式：</p>
+<blockquote>
+<p>当编译器使用分支方法编译 if 语句时，它将根据给定的条件生成仅计算 if 语句的一侧的代码。</p>
+</blockquote>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><code class="hljs assembly">0: lt r0.x, v1.x, l(0.500000)<br>1: if_nz r0.x<br>2:   mov o0.xyzw, l(1.000000, 0.000000, 0.000000, 1.000000)<br>3:   ret<br>4: else<br>5:   mov o0.xyzw, l(0.000000, 1.000000, 0.000000, 1.000000)<br>6:   ret<br>7: endif<br>8: ret<br></code></pre></td></tr></table></figure>
 
-<h2 id="2-数学基础"><a href="#2-数学基础" class="headerlink" title="2. 数学基础"></a>2. 数学基础</h2><h3 id="2-1-均匀分布"><a href="#2-1-均匀分布" class="headerlink" title="2.1 均匀分布"></a>2.1 均匀分布</h3><h2 id="3-CG-GPU硬件-Shader-基础"><a href="#3-CG-GPU硬件-Shader-基础" class="headerlink" title="3.CG&#x2F;GPU硬件&#x2F;Shader 基础"></a>3.CG&#x2F;GPU硬件&#x2F;Shader 基础</h2><h3 id="3-1-Warp-Sub-Group-中线程的命令执行-HLSL-分支标签"><a href="#3-1-Warp-Sub-Group-中线程的命令执行-HLSL-分支标签" class="headerlink" title="3.1 Warp&#x2F;Sub Group 中线程的命令执行  &#x2F; HLSL 分支标签"></a>3.1 Warp&#x2F;Sub Group 中线程的命令执行  &#x2F; HLSL 分支标签</h3>
+<p>使用 <code>flatten</code> Tag 编译出的Shader的DXIL格式：</p>
+<blockquote>
+<p>相反，如果使用 <strong>平展</strong> 属性，则编译的代码将计算 <strong>if</strong> 语句的两端，并使用 x 的原始值在两个结果值之间进行选择。</p>
+</blockquote>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><code class="hljs assembly">0: lt r0.x, v1.x, l(0.500000)<br>1: mov o0.xyzw, l(1.000000, 0.000000, 0.000000, 1.000000)<br>2: retc_nz r0.x<br>3: mov o0.xyzw, l(0.000000, 1.000000, 0.000000, 1.000000)<br>4: ret<br></code></pre></td></tr></table></figure>
+
+<h3 id="3-7-不同图形API的比较"><a href="#3-7-不同图形API的比较" class="headerlink" title="3.7 不同图形API的比较"></a>3.7 不同图形API的比较</h3><h3 id="3-8-圆饼阴影"><a href="#3-8-圆饼阴影" class="headerlink" title="3.8  圆饼阴影?"></a>3.8  圆饼阴影?</h3><h3 id="3-9-移动端的遮挡剔除"><a href="#3-9-移动端的遮挡剔除" class="headerlink" title="3.9 移动端的遮挡剔除"></a>3.9 移动端的遮挡剔除</h3><h2 id="4-UE相关"><a href="#4-UE相关" class="headerlink" title="4. UE相关"></a>4. UE相关</h2><h3 id="4-1-UE的多线程"><a href="#4-1-UE的多线程" class="headerlink" title="4.1 UE的多线程"></a>4.1 UE的多线程</h3>
                 
               </div>
             
@@ -331,6 +349,8 @@
         <a href="/Ibuki/tags/T-GPU%E6%9E%B6%E6%9E%84/" class="print-no-link">#T:GPU架构</a>
       
         <a href="/Ibuki/tags/T-Shader%E7%BC%96%E7%A8%8B/" class="print-no-link">#T:Shader编程</a>
+      
+        <a href="/Ibuki/tags/T-%E6%95%B0%E5%AD%A6/" class="print-no-link">#T:数学</a>
       
     </div>
   
@@ -398,6 +418,12 @@
                 <div class="post-prevnext my-3">
                   <article class="post-prev col-6">
                     
+                    
+                      <a href="/Ibuki/2025/05/18/basic-math-1/" title="杂记 1-重要性采样">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">杂记 1-重要性采样</span>
+                        <span class="visible-mobile">Previous</span>
+                      </a>
                     
                   </article>
                   <article class="post-next col-6">
